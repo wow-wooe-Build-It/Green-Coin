@@ -34,7 +34,11 @@ import com.greencoins.app.theme.AppColors
 
 @Composable
 fun GreenCoinsApp() {
-    var screen by remember { mutableStateOf<Screen>(Screen.Auth) }
+    var screen by remember { 
+        mutableStateOf<Screen>(
+            if (com.greencoins.app.data.AuthRepository.isUserLoggedIn()) Screen.Home else Screen.Auth
+        ) 
+    }
     var coins by remember { mutableStateOf(8420) }
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }

@@ -184,6 +184,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                 }
             }
         }
+        Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
