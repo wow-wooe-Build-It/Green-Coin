@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -53,61 +54,69 @@ fun BottomNav(
         NavItem(Screen.Challenges, Icons.Default.EmojiEvents),
         NavItem(Screen.Profile, Icons.Default.Person),
     )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .background(AppColors.bg)
-            .border(1.dp, AppColors.border),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        navItems.forEach { item ->
-            if (item.isAction) {
-                IconButton(
-                    onClick = { onChange(Screen.Plus) },
-                    modifier = Modifier
-                        .size(56.dp)
-                        .offset(y = (-32).dp)
-                        .background(AppColors.accent, CircleShape),
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp),
-                        tint = AppColors.black,
-                    )
-                }
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { onChange(item.id) },
-                        )
-                        .padding(8.dp),
-                ) {
-                    Box {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                            tint = if (active == item.id) AppColors.accent else AppColors.textSecondary,
-                        )
-                        if (active == item.id) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .offset(y = 4.dp)
-                                    .size(4.dp)
-                                    .background(AppColors.accent, CircleShape),
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .background(AppColors.bg)
+                .border(1.dp, AppColors.border),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            navItems.forEach { item ->
+                if (item.isAction) {
+                    Spacer(modifier = Modifier.size(56.dp))
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = { onChange(item.id) },
                             )
+                            .padding(8.dp),
+                    ) {
+                        Box {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp),
+                                tint = if (active == item.id) AppColors.accent else AppColors.textSecondary,
+                            )
+                            if (active == item.id) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.Center)
+                                        .offset(y = 4.dp)
+                                        .size(4.dp)
+                                        .background(AppColors.accent, CircleShape),
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+        
+        // FAB (Center +)
+        IconButton(
+            onClick = { onChange(Screen.Plus) },
+            modifier = Modifier
+               .align(Alignment.Center)
+                .offset(y = (-12).dp)
+                .size(56.dp)
+                .background(AppColors.accent, CircleShape),
+        ) {
+             Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = AppColors.black,
+            )
         }
     }
 }

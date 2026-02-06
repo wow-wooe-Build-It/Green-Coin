@@ -89,7 +89,7 @@ private fun PlusSelectionStep(onSelectMission: (String) -> Unit, onCancel: () ->
             ) {
                 row.forEach { m ->
                     GlassCard(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).height(220.dp),
                         onClick = { onSelectMission(m.id) },
                     ) {
                         Column(modifier = Modifier.padding(24.dp)) {
@@ -128,7 +128,14 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
         }
         Spacer(modifier = Modifier.height(32.dp))
         Text("MISSION BRIEFING", color = AppColors.accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        Text("Mission: ${mission.title}", color = AppColors.white, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+    "Mission: ${mission.title}",
+    color = AppColors.white,
+    fontSize = 36.sp,
+    fontWeight = FontWeight.Bold,
+    lineHeight = 44.sp 
+)
         Spacer(modifier = Modifier.height(48.dp))
         listOf(
             "Identify a suitable native planting spot",
