@@ -12,6 +12,10 @@ import com.greencoins.app.theme.GreenCoinsTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Handle deep link for Supabase Auth
+        com.greencoins.app.data.SupabaseManager.handleDeepLink(intent)
+        
         setContent {
             GreenCoinsTheme {
                 Surface(
