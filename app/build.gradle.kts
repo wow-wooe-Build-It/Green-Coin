@@ -60,8 +60,11 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Added from fix/shop-marketplace-hardcode
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     
-    // Supabase
+    // Supabase (Added from main)
     implementation(platform("io.github.jan-tennert.supabase:bom:3.0.0"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.ktor:ktor-client-android:3.0.0")
