@@ -43,30 +43,35 @@ fun ProfileScreen(onLogout: () -> Unit) {
             .verticalScroll(rememberScrollState())
             .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(128.dp)
-                    .padding(4.dp)
-                    .background(AppColors.accent, RoundedCornerShape(48.dp)),
-            ) {
-                ImageWithFallback(
-                    src = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
-                    contentDescription = "Avatar",
-                    modifier = Modifier.fillMaxSize(),
-                )
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(128.dp)
+                        .padding(4.dp)
+                        .background(AppColors.accent, RoundedCornerShape(48.dp)),
+                ) {
+                    ImageWithFallback(
+                        src = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .offset(y = (-8).dp)
+                        .background(AppColors.accent, RoundedCornerShape(9999.dp))
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                ) {
+                    Text("LVL 24", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("Kushagra Mehta", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text("#GC-492-9102-X", color = AppColors.textSecondary, fontSize = 12.sp)
             }
-            Box(
-                modifier = Modifier
-                    .offset(y = (-8).dp)
-                    .background(AppColors.accent, RoundedCornerShape(9999.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-            ) {
-                Text("LVL 24", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Kushagra Mehta", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("#GC-492-9102-X", color = AppColors.textSecondary, fontSize = 12.sp)
         }
         Spacer(modifier = Modifier.height(48.dp))
         Row(
