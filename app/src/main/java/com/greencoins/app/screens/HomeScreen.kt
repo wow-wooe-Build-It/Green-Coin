@@ -33,14 +33,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.tooling.preview.Preview
 import com.greencoins.app.theme.GreenCoinsTheme
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 @Composable
 fun HomeScreen(onMissionSelect: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
-    ) {
+    ){
         // Hero - Impact Dashboard
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -48,8 +54,44 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(224.dp),
+                modifier = Modifier.size(240.dp),
             ) {
+                val progress = 0.75f
+                val ringColor = AppColors.accent
+                
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val strokeWidth = 16.dp.toPx()
+                    val startAngle = 140f
+                    val sweepAngle = 260f
+                    
+                    // Background Track
+                    drawArc(
+                        color = ringColor.copy(alpha = 0.2f),
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                    
+                    // Glow Effect
+                    drawArc(
+                         color = ringColor.copy(alpha = 0.2f),
+                         startAngle = startAngle,
+                         sweepAngle = sweepAngle * progress,
+                         useCenter = false,
+                         style = Stroke(width = strokeWidth + 12.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    // Foreground Ring
+                    drawArc(
+                        color = ringColor,
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle * progress,
+                        useCenter = false,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                    )
+                }
+
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
                         text = "842",
@@ -58,9 +100,11 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = "Eco-Score",
+                        text = "ECO-SCORE",
                         color = AppColors.textSecondary,
                         fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
                 }
             }
@@ -201,12 +245,25 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                         .height(160.dp)
                         .padding(4.dp),
                 ) {
-                    ImageWithFallback(
-                        src = url,
-                        contentDescription = title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
+                    val isPreview = LocalInspectionMode.current
+
+                    if (isPreview) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(AppColors.border),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(title, color = AppColors.white)
+                        }
+                    } else {
+                        ImageWithFallback(
+                            src = url,
+                            contentDescription = title,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
