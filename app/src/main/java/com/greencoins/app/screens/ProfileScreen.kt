@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -25,7 +28,10 @@ import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.greencoins.app.data.AuthRepository
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +43,34 @@ import com.greencoins.app.theme.AppColors
 
 @Composable
 fun ProfileScreen(onLogout: () -> Unit) {
+    var user by remember { mutableStateOf<io.github.jan.supabase.auth.user.UserInfo?>(null) }
+    var showPersonalInfo by remember { mutableStateOf(false) }
+    
+    // Fetch user on launch
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        user = AuthRepository.currentUser
+    }
+    
+    if (showPersonalInfo && user != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showPersonalInfo = false },
+            title = { Text("Personal Information") },
+            text = {
+                Column {
+                    Text("Email: ${user?.email ?: "N/A"}")
+                    Text("Phone: ${user?.userMetadata?.get("phone")?.toString()?.replace("\"", "") ?: "N/A"}")
+                    Text("ID: ${user?.id}")
+                    Text("Last Sign In: ${user?.lastSignInAt ?: "N/A"}")
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showPersonalInfo = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,8 +103,10 @@ fun ProfileScreen(onLogout: () -> Unit) {
                     Text("LVL 24", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("Kushagra Mehta", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                Text("#GC-492-9102-X", color = AppColors.textSecondary, fontSize = 12.sp)
+                
+                val displayName = user?.userMetadata?.get("full_name")?.toString()?.replace("\"", "") ?: "GreenCoin User"
+                Text(displayName, color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(user?.email ?: "", color = AppColors.textSecondary, fontSize = 12.sp)
             }
         }
         Spacer(modifier = Modifier.height(48.dp))
@@ -101,16 +137,17 @@ fun ProfileScreen(onLogout: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(40.dp))
         listOf(
-            Icons.Default.Person to "Personal Information",
-            Icons.Default.Star to "Impact Statistics",
-            Icons.Default.ShoppingBag to "Redemption History",
-            com.greencoins.app.ui.NavIcons.Help to "Help & Support",
-        ).forEach { (icon, label) ->
+            Triple(Icons.Default.Person, "Personal Information", { showPersonalInfo = true }),
+            Triple(Icons.Default.Star, "Impact Statistics", {}),
+            Triple(Icons.Default.ShoppingBag, "Redemption History", {}),
+            Triple(com.greencoins.app.ui.NavIcons.Help, "Help & Support", {}),
+        ).forEach { (icon, label, onClickAction) ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
                     .background(AppColors.border, RoundedCornerShape(24.dp))
+                    .clickable { onClickAction() }
                     .padding(20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,

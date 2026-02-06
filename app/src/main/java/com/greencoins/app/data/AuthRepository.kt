@@ -6,8 +6,13 @@ import io.github.jan.supabase.auth.providers.Google
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
+import io.github.jan.supabase.auth.user.UserInfo
+
 object AuthRepository {
     private val auth = SupabaseManager.client.auth
+
+    val currentUser: UserInfo?
+        get() = auth.currentUserOrNull()
 
     suspend fun signUpWithEmail(email: String, pass: String, name: String, phone: String) {
         auth.signUpWith(Email) {

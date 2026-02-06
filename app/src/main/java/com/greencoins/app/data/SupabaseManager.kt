@@ -10,6 +10,7 @@ import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.auth.handleDeeplinks
 import io.github.jan.supabase.auth.user.UserSession
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -57,6 +58,7 @@ object SupabaseManager {
                     }
                 }
             }
+            install(Postgrest)
         }
     }
 
