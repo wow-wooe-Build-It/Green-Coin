@@ -16,10 +16,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.greencoins.app.components.BottomNav
 import com.greencoins.app.components.Header
 import com.greencoins.app.data.Screen
 import com.greencoins.app.screens.AuthScreen
+import com.greencoins.app.screens.CategoryRewardsScreen
 import com.greencoins.app.screens.ChallengesScreen
 import com.greencoins.app.screens.HelpScreen
 import com.greencoins.app.screens.HomeScreen
@@ -27,6 +29,7 @@ import com.greencoins.app.screens.PlusFlow
 import com.greencoins.app.screens.PlusStep
 import com.greencoins.app.screens.ProfileScreen
 import com.greencoins.app.screens.ShopScreen
+import com.greencoins.app.screens.ShopViewModel
 import com.greencoins.app.theme.AppColors
 
 @Composable
@@ -35,12 +38,15 @@ fun GreenCoinsApp() {
     var coins by remember { mutableStateOf(8420) }
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }
+    var selectedShopCategory by remember { mutableStateOf<String?>(null) }
+    val shopViewModel: ShopViewModel = viewModel()
 
     fun handleScreenChange(s: Screen) {
         if (s == Screen.Plus) {
             plusStep = PlusStep.Selection
             screen = Screen.Plus
         } else {
+            if (s == Screen.Shop) selectedShopCategory = null
             screen = s
         }
     }
@@ -79,7 +85,20 @@ fun GreenCoinsApp() {
                 when (current) {
                     Screen.Auth -> { }
                     Screen.Home -> HomeScreen(onMissionSelect = ::handleMissionSelect)
-                    Screen.Shop -> ShopScreen()
+                    Screen.Shop -> when {
+                        selectedShopCategory == null -> ShopScreen(
+                            categories = shopViewModel.categories,
+                            onCategoryClick = { selectedShopCategory = it },
+                        )
+                        else -> CategoryRewardsScreen(
+                            categories = shopViewModel.categories,
+                            rewards = shopViewModel.getRewardsForCategory(selectedShopCategory!!),
+                            selectedCategory = selectedShopCategory!!,
+                            onCategoryChange = { selectedShopCategory = it },
+                            onRedeem = { /* UI feedback only – "Claimed" state shown in card */ },
+                            onBack = { selectedShopCategory = null },
+                        )
+                    }
                     Screen.Help -> HelpScreen(onClose = { screen = Screen.Home })
                     Screen.Plus -> PlusFlow(
                         step = plusStep,
