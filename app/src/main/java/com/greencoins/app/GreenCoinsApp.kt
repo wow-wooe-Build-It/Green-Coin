@@ -96,7 +96,6 @@ fun GreenCoinsApp() {
                         )
                         else -> CategoryRewardsScreen(
                             categories = shopViewModel.categories,
-                            rewards = shopViewModel.getRewardsForCategory(selectedShopCategory!!),
                             selectedCategory = selectedShopCategory!!,
                             onCategoryChange = { selectedShopCategory = it },
                             onRedeem = { /* UI feedback only – "Claimed" state shown in card */ },

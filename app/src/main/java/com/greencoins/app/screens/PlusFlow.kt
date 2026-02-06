@@ -1,7 +1,12 @@
 package com.greencoins.app.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,28 +26,40 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.greencoins.app.components.GlassCard
+import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.Mission
-import com.greencoins.app.data.MissionsData
+import com.greencoins.app.data.MissionRepository
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.ui.toImageVector
+import kotlinx.coroutines.launch
 
 sealed class PlusStep { object Selection : PlusStep(); object Brief : PlusStep(); object Upload : PlusStep(); object Success : PlusStep() }
 
@@ -54,17 +71,49 @@ fun PlusFlow(
     onNext: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val selectedMission = MissionsData.list.find { it.id == missionId } ?: MissionsData.list.first()
+    var missions by remember { mutableStateOf<List<Mission>>(emptyList()) }
+    var selectedMission by remember { mutableStateOf<Mission?>(null) }
+    
+    // Fetch all missions for selection list
+    LaunchedEffect(Unit) {
+        missions = MissionRepository.getMissions()
+    }
+
+    // Fetch specific mission when ID changes
+    LaunchedEffect(missionId) {
+        if (missionId != null) {
+            selectedMission = MissionRepository.getMission(missionId)
+        }
+    }
+
     when (step) {
-        is PlusStep.Selection -> PlusSelectionStep(onSelectMission = onSelectMission, onCancel = onCancel)
-        is PlusStep.Brief -> PlusBriefStep(mission = selectedMission, onNext = onNext, onCancel = onCancel)
-        is PlusStep.Upload -> PlusUploadStep(onNext = onNext, onCancel = onCancel)
-        is PlusStep.Success -> PlusSuccessStep(mission = selectedMission, onCancel = onCancel)
+        is PlusStep.Selection -> PlusSelectionStep(missions = missions, onSelectMission = onSelectMission, onCancel = onCancel)
+        is PlusStep.Brief -> {
+            if (selectedMission != null) {
+                PlusBriefStep(mission = selectedMission!!, onNext = onNext, onCancel = onCancel)
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            }
+        }
+        is PlusStep.Upload -> {
+            if (selectedMission != null) {
+                PlusUploadStep(mission = selectedMission!!, onNext = onNext, onCancel = onCancel)
+            } else {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            }
+        }
+        is PlusStep.Success -> {
+            if (selectedMission != null) {
+                PlusSuccessStep(mission = selectedMission!!, onCancel = onCancel)
+            } else {
+                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            }
+        }
     }
 }
 
 @Composable
-private fun PlusSelectionStep(onSelectMission: (String) -> Unit, onCancel: () -> Unit) {
+private fun PlusSelectionStep(missions: List<Mission>, onSelectMission: (String) -> Unit, onCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,36 +131,43 @@ private fun PlusSelectionStep(onSelectMission: (String) -> Unit, onCancel: () ->
             }
         }
         Spacer(modifier = Modifier.height(40.dp))
-        MissionsData.list.chunked(2).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                row.forEach { m ->
-                    GlassCard(
-                        modifier = Modifier.weight(1f).height(220.dp),
-                        onClick = { onSelectMission(m.id) },
-                    ) {
-                        Column(modifier = Modifier.padding(24.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(AppColors.border)
-                                    .padding(12.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(m.iconId.toImageVector(), contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+        
+        if (missions.isEmpty()) {
+             Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                 CircularProgressIndicator()
+             }
+        } else {
+            missions.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    row.forEach { m ->
+                        GlassCard(
+                            modifier = Modifier.weight(1f).height(220.dp),
+                            onClick = { onSelectMission(m.id) },
+                        ) {
+                            Column(modifier = Modifier.padding(24.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(AppColors.border)
+                                        .padding(12.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(m.icon.toImageVector(), contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(m.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                Text(m.description ?: "", color = AppColors.textSecondary, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("+${m.gcReward} COINS", color = AppColors.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(m.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                            Text(m.desc, color = AppColors.textSecondary, fontSize = 12.sp)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("+${m.coins} COINS", color = AppColors.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -130,17 +186,19 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
         Text("MISSION BRIEFING", color = AppColors.accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-    "Mission: ${mission.title}",
-    color = AppColors.white,
-    fontSize = 36.sp,
-    fontWeight = FontWeight.Bold,
-    lineHeight = 44.sp 
-)
+            "Mission: ${mission.title}",
+            color = AppColors.white,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 44.sp 
+        )
         Spacer(modifier = Modifier.height(48.dp))
+        
+        // Mock steps for now, as DB doesn't have steps column.
         listOf(
-            "Identify a suitable native planting spot",
-            "Dig a hole 2x the size of the root ball",
-            "Plant sapling and water the soil",
+            "Prepare for the mission action",
+            "Perform the eco-friendly task",
+            "Take a photo as proof",
         ).forEachIndexed { index, text ->
             Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = 24.dp)) {
                 Box(
@@ -171,7 +229,21 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
 }
 
 @Composable
-private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
+private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var description by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
+
+    val contentResolver = context.contentResolver
+    
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            imageUri = uri
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -184,7 +256,7 @@ private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Proof of Impact", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            IconButton(onClick = onCancel) {
+            IconButton(onClick = onCancel, enabled = !isSubmitting) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
             }
         }
@@ -193,6 +265,7 @@ private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // Placeholder "Before" box
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -207,18 +280,32 @@ private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
                     Text("Before", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
-            Box(
+            
+            // "After" box - Clickable for upload
+             Box(
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
                     .background(AppColors.accent.copy(alpha = 0.05f), RoundedCornerShape(32.dp))
-                    .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp)),
+                    .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
+                    .clickable(enabled = !isSubmitting) {
+                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
                 contentAlignment = Alignment.Center,
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("After Image", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                if (imageUri != null) {
+                    AsyncImage(
+                        model = imageUri,
+                        contentDescription = "Selected Proof",
+                        modifier = Modifier.fillMaxSize().graphicsLayer { clip = true; shape = RoundedCornerShape(32.dp) },
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("After Image", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -241,8 +328,8 @@ private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         TextField(
-            value = "",
-            onValueChange = {},
+            value = description,
+            onValueChange = { description = it },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(128.dp),
@@ -256,15 +343,56 @@ private fun PlusUploadStep(onNext: () -> Unit, onCancel: () -> Unit) {
                 unfocusedIndicatorColor = AppColors.gray333,
             ),
             shape = RoundedCornerShape(24.dp),
+            enabled = !isSubmitting
         )
         Spacer(modifier = Modifier.height(32.dp))
         Button(
-            onClick = onNext,
+            onClick = {
+                if (isSubmitting) return@Button
+                scope.launch {
+                    isSubmitting = true
+                    try {
+                        val userId = AuthRepository.currentUser?.id
+                        if (userId != null && imageUri != null) {
+                             val inputStream = context.contentResolver.openInputStream(imageUri!!)
+                             if (inputStream != null) {
+                                 val bytes = inputStream.use { it.readBytes() }
+                                 try {
+                                     val imageUrl = MissionRepository.uploadMissionProof(userId, bytes)
+                                     MissionRepository.submitMission(userId, mission.id, imageUrl, description)
+                                     onNext()
+                                 } catch (e: Exception) {
+                                     e.printStackTrace()
+                                     android.widget.Toast.makeText(context, "Upload failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                 }
+                             } else {
+                                 android.widget.Toast.makeText(context, "Could not read image", android.widget.Toast.LENGTH_SHORT).show()
+                             }
+                        } else {
+                            if (userId == null) {
+                                android.widget.Toast.makeText(context, "User not logged in", android.widget.Toast.LENGTH_SHORT).show()
+                            } else {
+                                android.widget.Toast.makeText(context, "Please select an image", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } catch(e: Exception) {
+                        e.printStackTrace()
+                        android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    } finally {
+                        isSubmitting = false
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth().height(64.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent, contentColor = AppColors.black),
             shape = RoundedCornerShape(24.dp),
+            enabled = !isSubmitting && imageUri != null // Disable if no image
         ) {
-            Text("Submit for Verification", fontWeight = FontWeight.Bold)
+            if (isSubmitting) {
+                CircularProgressIndicator(color = AppColors.black, modifier = Modifier.size(24.dp))
+            } else {
+                 Text("Submit for Verification", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
@@ -292,7 +420,7 @@ private fun PlusSuccessStep(mission: Mission, onCancel: () -> Unit) {
         Text(
             "Our AI is verifying your mission proof. You'll receive coins once approved (est. 15 mins).",
             color = AppColors.textSecondary,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
         )
         Spacer(modifier = Modifier.height(48.dp))
         GlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -311,7 +439,7 @@ private fun PlusSuccessStep(mission: Mission, onCancel: () -> Unit) {
                             .padding(8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(mission.iconId.toImageVector(), contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+                        Icon(mission.icon.toImageVector(), contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
                     }
                     Spacer(modifier = Modifier.size(12.dp))
                     Column {

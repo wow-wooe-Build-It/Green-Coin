@@ -1,5 +1,11 @@
 package com.greencoins.app.screens
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import com.greencoins.app.data.ShopRepository
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,9 +42,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.ImageWithFallback
-import com.greencoins.app.data.REWARD_CATEGORIES
+
 import com.greencoins.app.data.Reward
-import com.greencoins.app.data.RewardsData
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.theme.GreenCoinsTheme
 
@@ -47,6 +52,12 @@ fun ShopScreen(
     categories: List<String>,
     onCategoryClick: (String) -> Unit,
 ) {
+    var popularRewards by remember { mutableStateOf<List<Reward>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        popularRewards = ShopRepository.getRewards()
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
         modifier = Modifier
@@ -77,10 +88,10 @@ fun ShopScreen(
         item(span = { GridItemSpan(2) }) {
             Spacer(modifier = Modifier.height(8.dp))
         }
-        items(RewardsData.list) { reward ->
+        items(popularRewards) { reward ->
             PopularRewardCard(
                 reward = reward,
-                onClick = { onCategoryClick(mapRewardToCategory(reward)) },
+                onClick = { onCategoryClick(reward.category) },
             )
         }
     }
@@ -147,12 +158,12 @@ private fun PopularRewardCard(
                 .background(AppColors.border, RoundedCornerShape(28.dp)),
         ) {
             ImageWithFallback(
-                src = reward.image,
+                src = reward.imageUrl ?: "",
                 contentDescription = reward.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
-            reward.discount?.let { discount ->
+            reward.discountLabel?.let { discount ->
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -169,7 +180,7 @@ private fun PopularRewardCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(12.dp).background(AppColors.accent, RoundedCornerShape(6.dp)))
             Spacer(modifier = Modifier.size(6.dp))
-            Text("${reward.price}", color = AppColors.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("${reward.gcCost}", color = AppColors.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -222,7 +233,7 @@ private fun CategoryCard(
 private fun ShopScreenPreview() {
     GreenCoinsTheme {
         ShopScreen(
-            categories = REWARD_CATEGORIES,
+            categories = listOf("Travel", "Eco Store", "Lifestyle"),
             onCategoryClick = {},
         )
     }

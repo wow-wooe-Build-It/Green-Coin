@@ -1,5 +1,12 @@
 package com.greencoins.app.screens
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import com.greencoins.app.data.ChallengeRepository
+import com.greencoins.app.data.Challenge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -32,12 +39,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
 import com.greencoins.app.components.ImageWithFallback
-import com.greencoins.app.data.ChallengesData
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.ui.toImageVector
 
 @Composable
 fun ChallengesScreen() {
+    var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        challenges = ChallengeRepository.getAllChallenges()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,14 +69,16 @@ fun ChallengesScreen() {
         Spacer(modifier = Modifier.height(32.dp))
         Text("My Active", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
+        val activeList = challenges.filter { it.isActive }
+        
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ChallengesData.active.forEach { c ->
-                val progress = c.progress
+            activeList.take(2).forEach { c ->
+                val progress = 0 // Future: Calculate actual progress
                 GlassCard(modifier = Modifier.width(300.dp)) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
@@ -77,7 +91,7 @@ fun ChallengesScreen() {
                                     .background(AppColors.border, RoundedCornerShape(16.dp)),
                             ) {
                                 ImageWithFallback(
-                                    src = c.img,
+                                    src = c.coverImageUrl ?: "",
                                     contentDescription = c.title,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop,
@@ -85,7 +99,7 @@ fun ChallengesScreen() {
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(c.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("${c.timeLeft} LEFT", color = AppColors.accent, fontSize = 10.sp)
+                                Text("${c.endDate?.take(10) ?: "Active"} LEFT", color = AppColors.accent, fontSize = 10.sp)
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -112,7 +126,7 @@ fun ChallengesScreen() {
         Spacer(modifier = Modifier.height(40.dp))
         Text("Featured Missions", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(24.dp))
-        ChallengesData.featured.forEach { f ->
+        activeList.drop(2).take(2).forEach { c ->
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,8 +135,8 @@ fun ChallengesScreen() {
                     .background(AppColors.border, RoundedCornerShape(32.dp)),
             ) {
                 ImageWithFallback(
-                    src = f.img,
-                    contentDescription = f.title,
+                    src = c.coverImageUrl ?: "",
+                    contentDescription = c.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
@@ -153,11 +167,11 @@ fun ChallengesScreen() {
                                 .background(AppColors.accent, RoundedCornerShape(9999.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         ) {
-                            Text(f.reward, color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("${c.rewardGc} GC", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(f.title, color = AppColors.white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("${f.participants} agents joined", color = AppColors.white.copy(alpha = 0.6f), fontSize = 12.sp)
+                        Text(c.title, color = AppColors.white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("0 agents joined", color = AppColors.white.copy(alpha = 0.6f), fontSize = 12.sp)
                     }
                     androidx.compose.material3.Button(
                         onClick = {},
@@ -172,7 +186,7 @@ fun ChallengesScreen() {
         Spacer(modifier = Modifier.height(40.dp))
         Text("Global Network", color = AppColors.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
-        ChallengesData.global.forEach { g ->
+        activeList.drop(4).take(3).forEach { c ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -191,7 +205,7 @@ fun ChallengesScreen() {
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            g.iconId.toImageVector(),
+                            com.greencoins.app.data.MissionIcon.Leaf.toImageVector(),
                             contentDescription = null,
                             tint = AppColors.accent,
                             modifier = Modifier.size(20.dp),
@@ -199,8 +213,8 @@ fun ChallengesScreen() {
                     }
                     Spacer(modifier = Modifier.size(16.dp))
                     Column {
-                        Text(g.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("${g.region} • ${g.goal}", color = AppColors.textSecondary, fontSize = 10.sp)
+                        Text(c.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("Global • ${c.description?.take(20) ?: ""}", color = AppColors.textSecondary, fontSize = 10.sp)
                     }
                 }
                 Icon(Icons.Default.ArrowForward, contentDescription = null, tint = AppColors.gray555, modifier = Modifier.size(16.dp))

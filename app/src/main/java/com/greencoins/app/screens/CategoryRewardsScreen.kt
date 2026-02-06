@@ -18,32 +18,47 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.greencoins.app.data.ShopReward
+import com.greencoins.app.data.AuthRepository
+import com.greencoins.app.data.Reward
+import com.greencoins.app.data.ShopRepository
 import com.greencoins.app.theme.AppColors
+import kotlinx.coroutines.launch
 
 @Composable
 fun CategoryRewardsScreen(
     categories: List<String>,
-    rewards: List<ShopReward>,
     selectedCategory: String,
     onCategoryChange: (String) -> Unit,
-    onRedeem: (ShopReward) -> Unit,
+    onRedeem: (Reward) -> Unit,
     onBack: () -> Unit,
 ) {
+    var rewards by remember { mutableStateOf<List<Reward>>(emptyList()) }
     var redeemedIds by remember { mutableStateOf(setOf<String>()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(selectedCategory) {
+        isLoading = true
+        rewards = ShopRepository.getRewardsByCategory(selectedCategory)
+        isLoading = false
+    }
+    
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -109,15 +124,31 @@ fun CategoryRewardsScreen(
                 .padding(start = 24.dp, top = 16.dp, end = 24.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            rewards.forEach { reward ->
-                RewardCard(
-                    reward = reward,
-                    isRedeemed = reward.id in redeemedIds,
-                    onRedeem = {
-                        redeemedIds = redeemedIds + reward.id
-                        onRedeem(reward)
-                    },
-                )
+            if (isLoading) {
+                 Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                     CircularProgressIndicator()
+                 }
+            } else {
+                rewards.forEach { reward ->
+                    RewardCard(
+                        reward = reward,
+                        isRedeemed = reward.id in redeemedIds,
+                        onRedeem = {
+                            scope.launch {
+                                // Call repository to redeem
+                                val success = ShopRepository.redeemReward(
+                                    userId = AuthRepository.currentUser?.id ?: "",
+                                    rewardId = reward.id,
+                                    cost = reward.gcCost
+                                )
+                                if (success) {
+                                    redeemedIds = redeemedIds + reward.id
+                                    onRedeem(reward)
+                                }
+                            }
+                        },
+                    )
+                }
             }
         }
     }
@@ -125,7 +156,7 @@ fun CategoryRewardsScreen(
 
 @Composable
 private fun RewardCard(
-    reward: ShopReward,
+    reward: Reward,
     isRedeemed: Boolean,
     onRedeem: () -> Unit,
 ) {
@@ -156,7 +187,7 @@ private fun RewardCard(
                     )
                     Spacer(modifier = Modifier.size(6.dp))
                     Text(
-                        text = "${reward.coinCost} GC",
+                        text = "${reward.gcCost} GC",
                         color = AppColors.accent,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,

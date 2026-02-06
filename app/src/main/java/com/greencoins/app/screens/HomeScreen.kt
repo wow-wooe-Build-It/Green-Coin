@@ -1,5 +1,6 @@
 package com.greencoins.app.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -12,35 +13,62 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
 import com.greencoins.app.components.ImageWithFallback
-import com.greencoins.app.data.MissionsData
-import com.greencoins.app.data.MissionIcon
+import com.greencoins.app.data.Challenge
+import com.greencoins.app.data.ChallengeRepository
+import com.greencoins.app.data.Mission
+import com.greencoins.app.data.MissionRepository
+import com.greencoins.app.data.UserProfile
+import com.greencoins.app.data.UserRepository
 import com.greencoins.app.theme.AppColors
-import com.greencoins.app.ui.toImageVector
-import androidx.compose.material3.Icon
-import androidx.compose.foundation.layout.width
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.tooling.preview.Preview
 import com.greencoins.app.theme.GreenCoinsTheme
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.foundation.Canvas
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import com.greencoins.app.ui.toImageVector
+
+import io.github.jan.supabase.auth.auth
+import com.greencoins.app.data.SupabaseManager
 
 @Composable
 fun HomeScreen(onMissionSelect: (String) -> Unit) {
+    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
+    var missions by remember { mutableStateOf<List<Mission>>(emptyList()) }
+    var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
+        if (userId != null) {
+            userProfile = UserRepository.getProfile(userId)
+        }
+        missions = MissionRepository.getMissions()
+        challenges = ChallengeRepository.getChallenges()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -94,7 +122,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "842",
+                        text = (userProfile?.ecoScore ?: 0).toString(),
                         color = AppColors.white,
                         fontSize = 48.sp,
                         fontWeight = FontWeight.Bold,
@@ -151,7 +179,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            MissionsData.list.take(2).forEach { m ->
+            missions.take(2).forEach { m ->
                 GlassCard(
                     modifier = Modifier.weight(1f),
                     onClick = { onMissionSelect(m.id) },
@@ -165,7 +193,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = m.iconId.toImageVector(),
+                                imageVector = m.icon.toImageVector(),
                                 contentDescription = null,
                                 tint = AppColors.accent,
                                 modifier = Modifier.size(24.dp),
@@ -173,10 +201,10 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(m.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(m.desc, color = AppColors.textSecondary, fontSize = 10.sp)
+                        Text(m.description ?: "", color = AppColors.textSecondary, fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("+${m.coins}", color = AppColors.accent, fontSize = 10.sp)
+                            Text("+${m.gcReward}", color = AppColors.accent, fontSize = 10.sp)
                             Spacer(modifier = Modifier.size(4.dp))
                             Box(modifier = Modifier.size(4.dp).background(AppColors.accent, CircleShape))
                         }
@@ -189,7 +217,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            MissionsData.list.drop(2).take(2).forEach { m ->
+            missions.drop(2).take(2).forEach { m ->
                 GlassCard(
                     modifier = Modifier.weight(1f),
                     onClick = { onMissionSelect(m.id) },
@@ -203,7 +231,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                imageVector = m.iconId.toImageVector(),
+                                imageVector = m.icon.toImageVector(),
                                 contentDescription = null,
                                 tint = AppColors.accent,
                                 modifier = Modifier.size(24.dp),
@@ -211,10 +239,10 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(m.title, color = AppColors.white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(m.desc, color = AppColors.textSecondary, fontSize = 10.sp)
+                        Text(m.description ?: "", color = AppColors.textSecondary, fontSize = 10.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("+${m.coins}", color = AppColors.accent, fontSize = 10.sp)
+                            Text("+${m.gcReward}", color = AppColors.accent, fontSize = 10.sp)
                             Spacer(modifier = Modifier.size(4.dp))
                             Box(modifier = Modifier.size(4.dp).background(AppColors.accent, CircleShape))
                         }
@@ -236,10 +264,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            listOf(
-                Triple("Forest Guardian", "https://images.unsplash.com/photo-1647220576336-f2e94680f3b8?q=80&w=400", 500),
-                Triple("Ocean Breath", "https://images.unsplash.com/photo-1758599668949-5118d71838fd?q=80&w=400", 1200),
-            ).forEach { (title, url, reward) ->
+            challenges.forEach { c ->
                 Box(
                     modifier = Modifier
                         .width(280.dp)
@@ -255,12 +280,12 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                                 .background(AppColors.border),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(title, color = AppColors.white)
+                            Text(c.title, color = AppColors.white)
                         }
                     } else {
                         ImageWithFallback(
-                            src = url,
-                            contentDescription = title,
+                            src = c.coverImageUrl ?: "",
+                            contentDescription = c.title,
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                         )
@@ -271,8 +296,8 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                             .background(
                                 Brush.verticalGradient(
                                     listOf(
-                                        androidx.compose.ui.graphics.Color.Transparent,
-                                        androidx.compose.ui.graphics.Color.Black,
+                                        Color.Transparent,
+                                        Color.Black,
                                     )
                                 )
                             ),
@@ -292,18 +317,18 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                                     .padding(horizontal = 8.dp, vertical = 2.dp),
                             ) {
                                 Text(
-                                    text = "WIN $reward COINS",
+                                    text = "WIN ${c.rewardGc} COINS",
                                     color = AppColors.black,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
-                            Text(title, color = AppColors.white, fontWeight = FontWeight.Bold)
+                            Text(c.title, color = AppColors.white, fontWeight = FontWeight.Bold)
                         }
-                        androidx.compose.material3.OutlinedButton(
+                        OutlinedButton(
                             onClick = {},
                             modifier = Modifier.height(32.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = AppColors.white),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.white),
                             border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.white.copy(alpha = 0.2f)),
                         ) {
                             Text("Join", fontSize = 10.sp, fontWeight = FontWeight.Bold)
