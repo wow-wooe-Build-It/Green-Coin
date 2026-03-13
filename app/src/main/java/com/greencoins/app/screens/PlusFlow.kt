@@ -1,6 +1,8 @@
 package com.greencoins.app.screens
 
+import android.content.Context
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -308,6 +310,29 @@ private fun missionIconPlaceholder(): com.greencoins.app.data.MissionIcon {
     return com.greencoins.app.data.MissionIcon.TreePine
 }
 
+/**
+ * Validates EXIF metadata to ensure the image is likely from a real camera.
+ * Returns true if valid, false if suspicious (missing required metadata).
+ */
+private fun hasValidExifMetadata(context: Context, uri: Uri): Boolean {
+    return try {
+        context.contentResolver.openInputStream(uri)?.use { inputStream ->
+            val exif = ExifInterface(inputStream)
+            val dateTime = exif.getAttribute(ExifInterface.TAG_DATETIME)
+            val cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE)
+            val cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL)
+
+            val hasDateTime = !dateTime.isNullOrBlank()
+            val hasCameraInfo = !cameraMake.isNullOrBlank() || !cameraModel.isNullOrBlank()
+
+            hasDateTime && hasCameraInfo
+        } ?: false
+    } catch (e: Exception) {
+        e.printStackTrace()
+        false
+    }
+}
+
 @Composable
 private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
@@ -322,8 +347,20 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
 
     val mediaLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         when (pendingImageSlot) {
-            true -> if (uri != null) beforeImageUri = uri
-            false -> if (uri != null) afterImageUri = uri
+            true -> if (uri != null) {
+                if (hasValidExifMetadata(context, uri)) {
+                    beforeImageUri = uri
+                } else {
+                    android.widget.Toast.makeText(context, "Image metadata missing. Please upload a real photo taken from your camera.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
+            false -> if (uri != null) {
+                if (hasValidExifMetadata(context, uri)) {
+                    afterImageUri = uri
+                } else {
+                    android.widget.Toast.makeText(context, "Image metadata missing. Please upload a real photo taken from your camera.", android.widget.Toast.LENGTH_LONG).show()
+                }
+            }
             null -> { }
         }
         pendingImageSlot = null
