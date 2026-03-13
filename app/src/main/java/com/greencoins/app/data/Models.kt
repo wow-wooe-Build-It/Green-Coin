@@ -76,3 +76,43 @@ data class Transaction(
     @SerialName("created_at") val createdAt: String? = null
 )
 
+
+/** Unified challenge data for the detail screen. */
+data class ChallengeDetailData(
+    val id: String,
+    val title: String,
+    val img: String,
+    val instructions: List<String>,
+)
+
+/** Leaderboard entry for challenge detail. */
+data class LeaderboardEntry(
+    val rank: Int,
+    val username: String,
+    val coins: Int,
+    val isCurrentUser: Boolean,
+)
+
+object ChallengeDetailRepository {
+    private const val PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1647220576336-f2e94680f3b8?q=80&w=400"
+
+    // Adapter for Supabase Challenge -> UI Detail Data
+    fun toDetail(challenge: Challenge) = ChallengeDetailData(
+        id = challenge.id,
+        title = challenge.title,
+        img = challenge.coverImageUrl ?: PLACEHOLDER_IMG,
+        instructions = listOf(
+            "Read the challenge description: ${challenge.description ?: "Make an impact!"}",
+            "Perform the required eco-friendly actions.",
+            "Upload your proof in the Missions tab to earn GC!"
+        )
+    )
+
+    fun getMockLeaderboard(seed: Int): List<LeaderboardEntry> = listOf(
+        LeaderboardEntry(1, "Kushagra Mehta", 450, true),
+        LeaderboardEntry(2, "NeonRunner22", 410, false),
+        LeaderboardEntry(3, "EcoGhost", 395, false),
+        LeaderboardEntry(4, "GreenByte", 380, false),
+        LeaderboardEntry(5, "SolarPunk", 360, false),
+    )
+}

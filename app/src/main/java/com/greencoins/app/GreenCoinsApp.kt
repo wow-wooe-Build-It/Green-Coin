@@ -27,6 +27,8 @@ import com.greencoins.app.screens.HelpScreen
 import com.greencoins.app.screens.HomeScreen
 import com.greencoins.app.screens.PlusFlow
 import com.greencoins.app.screens.PlusStep
+import com.greencoins.app.screens.ChallengeDetailScreen
+import com.greencoins.app.data.ChallengeDetailData
 import com.greencoins.app.screens.ProfileScreen
 import com.greencoins.app.screens.ShopScreen
 import com.greencoins.app.screens.ShopViewModel
@@ -43,6 +45,7 @@ fun GreenCoinsApp() {
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }
     var selectedShopCategory by remember { mutableStateOf<String?>(null) }
+    var selectedChallenge by remember { mutableStateOf<com.greencoins.app.data.ChallengeDetailData?>(null) }
     val shopViewModel: ShopViewModel = viewModel()
 
     fun handleScreenChange(s: Screen) {
@@ -116,7 +119,20 @@ fun GreenCoinsApp() {
                         },
                         onCancel = { screen = Screen.Home },
                     )
-                    Screen.Challenges -> ChallengesScreen()
+                    Screen.Challenges -> ChallengesScreen(
+                        onChallengeClick = { data ->
+                            selectedChallenge = data
+                            screen = Screen.ChallengeDetail
+                        }
+                    )
+                    Screen.ChallengeDetail -> if (selectedChallenge != null) {
+                        ChallengeDetailScreen(
+                            data = selectedChallenge!!,
+                            onBack = { screen = Screen.Challenges }
+                        )
+                    } else {
+                        screen = Screen.Challenges // Fallback
+                    }
                     Screen.Profile -> ProfileScreen(onLogout = { screen = Screen.Auth })
                     else -> { }
                 }

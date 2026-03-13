@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import com.greencoins.app.data.ChallengeRepository
 import com.greencoins.app.data.Challenge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,8 +43,11 @@ import com.greencoins.app.components.ImageWithFallback
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.ui.toImageVector
 
+import com.greencoins.app.data.ChallengeDetailData
+import com.greencoins.app.data.ChallengeDetailRepository
+
 @Composable
-fun ChallengesScreen() {
+fun ChallengesScreen(onChallengeClick: (ChallengeDetailData) -> Unit = {}) {
     var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
 
     LaunchedEffect(Unit) {
@@ -79,7 +83,9 @@ fun ChallengesScreen() {
         ) {
             activeList.take(2).forEach { c ->
                 val progress = 0 // Future: Calculate actual progress
-                GlassCard(modifier = Modifier.width(300.dp)) {
+                GlassCard(
+                    modifier = Modifier.width(300.dp).clickable { onChallengeClick(ChallengeDetailRepository.toDetail(c)) }
+                ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -132,7 +138,8 @@ fun ChallengesScreen() {
                     .fillMaxWidth()
                     .height(224.dp)
                     .padding(vertical = 12.dp)
-                    .background(AppColors.border, RoundedCornerShape(32.dp)),
+                    .background(AppColors.border, RoundedCornerShape(32.dp))
+                    .clickable { onChallengeClick(ChallengeDetailRepository.toDetail(c)) },
             ) {
                 ImageWithFallback(
                     src = c.coverImageUrl ?: "",
@@ -174,7 +181,7 @@ fun ChallengesScreen() {
                         Text("0 agents joined", color = AppColors.white.copy(alpha = 0.6f), fontSize = 12.sp)
                     }
                     androidx.compose.material3.Button(
-                        onClick = {},
+                        onClick = { onChallengeClick(ChallengeDetailRepository.toDetail(c)) },
                         colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = AppColors.white, contentColor = AppColors.black),
                         shape = RoundedCornerShape(12.dp),
                     ) {
@@ -192,6 +199,7 @@ fun ChallengesScreen() {
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
                     .background(AppColors.border, RoundedCornerShape(24.dp))
+                    .clickable { onChallengeClick(ChallengeDetailRepository.toDetail(c)) }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
