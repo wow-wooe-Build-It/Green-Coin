@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.shape.CircleShape
+import android.util.Patterns
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.greencoins.app.data.AuthRepository
@@ -226,6 +227,11 @@ fun AuthScreen(onLogin: () -> Unit) {
                             try {
                                 isLoading = true
                                 error = null
+                                if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                    error = "Enter a valid email address"
+                                    isLoading = false
+                                    return@launch
+                                }
                                 if (isSignUp) {
                                     AuthRepository.signUpWithEmail(email, password, name, phone)
                                     if (AuthRepository.isUserLoggedIn()) {
