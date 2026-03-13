@@ -38,6 +38,9 @@ import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.Reward
 import com.greencoins.app.data.ShopRepository
 import com.greencoins.app.theme.AppColors
+import com.greencoins.app.components.ImageWithFallback
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 import kotlinx.coroutines.launch
 
 @Composable
@@ -179,27 +182,40 @@ private fun RewardCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = reward.title,
-                    color = AppColors.white,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                if (reward.imageUrl != null) {
+                    ImageWithFallback(
+                        src = reward.imageUrl,
+                        contentDescription = reward.title,
                         modifier = Modifier
-                            .size(10.dp)
-                            .background(AppColors.accent, RoundedCornerShape(4.dp)),
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
                     )
-                    Spacer(modifier = Modifier.size(6.dp))
+                    Spacer(modifier = Modifier.size(16.dp))
+                }
+                Column {
                     Text(
-                        text = "${reward.gcCost} GC",
-                        color = AppColors.accent,
-                        fontSize = 14.sp,
+                        text = reward.title,
+                        color = AppColors.white,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(AppColors.accent, RoundedCornerShape(4.dp)),
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            text = "${reward.gcCost} GC",
+                            color = AppColors.accent,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
             val (btnText, btnColor) = when {

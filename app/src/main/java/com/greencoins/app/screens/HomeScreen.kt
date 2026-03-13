@@ -379,7 +379,12 @@ fun StreakProgressCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             dayLabels.forEachIndexed { index, label ->
-                val isCompleted = weeklyProgress.getOrNull(index) == true
+                val daysAgo = currentDayIndex - index
+                val isCompleted = if (daysAgo in 0..6) {
+                    weeklyProgress.getOrNull(6 - daysAgo) == true
+                } else {
+                    false
+                }
                 val isCurrent = index == currentDayIndex
 
                 Column(
