@@ -29,11 +29,9 @@ alter table public.users add column if not exists updated_at timestamptz default
 
 alter table public.users enable row level security;
 
-drop policy if exists "Users can read own profile" on public.users;
 create policy "Users can read own profile"
   on public.users for select using ( auth.uid() = id );
 
-drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update using ( auth.uid() = id );
 
@@ -75,7 +73,6 @@ create table if not exists public.challenges (
 alter table public.challenges add column if not exists updated_at timestamptz default now();
 alter table public.challenges enable row level security;
 
-drop policy if exists "Public read access for challenges" on public.challenges;
 create policy "Public read access for challenges"
   on public.challenges for select using ( true );
 
@@ -104,7 +101,6 @@ alter table public.missions add column if not exists updated_at timestamptz defa
 
 alter table public.missions enable row level security;
 
-drop policy if exists "Public read access for missions" on public.missions;
 create policy "Public read access for missions"
   on public.missions for select using ( true );
 
@@ -121,11 +117,9 @@ create table if not exists public.user_challenges (
 
 alter table public.user_challenges enable row level security;
 
-drop policy if exists "Users can read own challenge joins" on public.user_challenges;
 create policy "Users can read own challenge joins"
   on public.user_challenges for select using ( auth.uid() = user_id );
 
-drop policy if exists "Users can insert own challenge joins" on public.user_challenges;
 create policy "Users can insert own challenge joins"
   on public.user_challenges for insert with check ( auth.uid() = user_id );
 
@@ -149,11 +143,9 @@ create table if not exists public.submissions (
 
 alter table public.submissions enable row level security;
 
-drop policy if exists "Users can view own submissions" on public.submissions;
 create policy "Users can view own submissions"
   on public.submissions for select using ( auth.uid() = user_id );
 
-drop policy if exists "Users can create submissions" on public.submissions;
 create policy "Users can create submissions"
   on public.submissions for insert with check ( auth.uid() = user_id );
 
@@ -179,7 +171,6 @@ alter table public.rewards add column if not exists updated_at timestamptz defau
 
 alter table public.rewards enable row level security;
 
-drop policy if exists "Public read access for rewards" on public.rewards;
 create policy "Public read access for rewards"
   on public.rewards for select using ( true );
 
@@ -198,11 +189,9 @@ create table if not exists public.transactions (
 
 alter table public.transactions enable row level security;
 
-drop policy if exists "Users can read own transactions" on public.transactions;
 create policy "Users can read own transactions"
   on public.transactions for select using ( auth.uid() = user_id );
 
-drop policy if exists "Users can insert own transactions" on public.transactions;
 create policy "Users can insert own transactions"
   on public.transactions for insert with check ( auth.uid() = user_id );
 
@@ -219,7 +208,6 @@ create table if not exists public.faq (
 
 alter table public.faq enable row level security;
 
-drop policy if exists "Public read access for FAQ" on public.faq;
 create policy "Public read access for FAQ"
   on public.faq for select using ( true );
 
@@ -234,7 +222,6 @@ create table if not exists public.reward_categories (
 
 alter table public.reward_categories enable row level security;
 
-drop policy if exists "Public read access for reward categories" on public.reward_categories;
 create policy "Public read access for reward categories"
   on public.reward_categories for select using ( true );
 
