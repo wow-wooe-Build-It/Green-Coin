@@ -26,6 +26,8 @@ alter table public.users add column if not exists co2_saved_kg int default 0;
 alter table public.users add column if not exists level int default 1;
 alter table public.users add column if not exists global_rank int;
 alter table public.users add column if not exists updated_at timestamptz default now();
+alter table public.users add column if not exists phone text;
+alter table public.users add column if not exists city text;
 
 alter table public.users enable row level security;
 
