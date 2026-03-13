@@ -298,7 +298,8 @@ fun StreakProgressCard(
         5 to "Earth Champion",
     )
     val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-    val currentDayIndex = 3 // Thu as placeholder
+    // Calendar: Sunday=1, Monday=2, ... Saturday=7. Map to Mon=0..Sun=6.
+    val currentDayIndex = ((java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7)
 
     val rawProgress = if (missionsRequiredForNextLevel > 0) {
         missionsCompleted / missionsRequiredForNextLevel.toFloat()

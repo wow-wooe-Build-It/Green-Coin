@@ -59,8 +59,6 @@ fun ProfileScreen(
     onShowImpactStatisticsChange: (Boolean) -> Unit = {},
     showRedemptionHistory: Boolean = false,
     onShowRedemptionHistoryChange: (Boolean) -> Unit = {},
-    showHelpSupport: Boolean = false,
-    onShowHelpSupportChange: (Boolean) -> Unit = {},
 ) {
     var user by remember { mutableStateOf<io.github.jan.supabase.auth.user.UserInfo?>(null) }
     var userProfile by remember { mutableStateOf<com.greencoins.app.data.UserProfile?>(null) }
@@ -92,10 +90,9 @@ fun ProfileScreen(
         }
     }
 
-    BackHandler(enabled = showImpactStatistics || showRedemptionHistory || showHelpSupport || showPersonalInfo) {
+    BackHandler(enabled = showImpactStatistics || showRedemptionHistory || showPersonalInfo) {
         onShowImpactStatisticsChange(false)
         onShowRedemptionHistoryChange(false)
-        onShowHelpSupportChange(false)
         onShowPersonalInfoChange(false)
     }
 
@@ -105,10 +102,6 @@ fun ProfileScreen(
     }
     if (showRedemptionHistory && user != null) {
         RedemptionHistoryScreen(userId = user!!.id, onBack = { onShowRedemptionHistoryChange(false) })
-        return
-    }
-    if (showHelpSupport) {
-        HelpSupportScreen(onBack = { onShowHelpSupportChange(false) })
         return
     }
     if (showPersonalInfo && user != null) {
@@ -217,7 +210,6 @@ fun ProfileScreen(
             Triple(Icons.Default.Person, "Personal Information", { onShowPersonalInfoChange(true) }),
             Triple(Icons.Default.Star, "Impact Statistics", { onShowImpactStatisticsChange(true) }),
             Triple(Icons.Default.ShoppingBag, "Redemption History", { onShowRedemptionHistoryChange(true) }),
-            Triple(com.greencoins.app.ui.NavIcons.Help, "Help & Support", { onShowHelpSupportChange(true) }),
         ).forEach { (icon, label, onClickAction) ->
             Row(
                 modifier = Modifier
