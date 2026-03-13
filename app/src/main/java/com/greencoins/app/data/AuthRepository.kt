@@ -23,14 +23,26 @@ object AuthRepository {
     private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
     val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn.asStateFlow()
 
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+
     init {
         scope.launch {
             auth.sessionStatus.collect { status ->
                 when (status) {
-                    is SessionStatus.Authenticated -> _isLoggedIn.value = true
-                    is SessionStatus.NotAuthenticated -> _isLoggedIn.value = false
+                    is SessionStatus.Authenticated -> {
+                        _isLoggedIn.value = true
+                        _currentUserId.value = auth.currentUserOrNull()?.id
+                    }
+                    is SessionStatus.NotAuthenticated -> {
+                        _isLoggedIn.value = false
+                        _currentUserId.value = null
+                    }
                     is SessionStatus.Initializing -> { /* Wait for preferences */ }
-                    is SessionStatus.RefreshFailure -> _isLoggedIn.value = false
+                    is SessionStatus.RefreshFailure -> {
+                        _isLoggedIn.value = false
+                        _currentUserId.value = null
+                    }
                 }
             }
         }

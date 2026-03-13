@@ -43,11 +43,11 @@ import com.greencoins.app.data.ChallengeDetailData
 import com.greencoins.app.screens.ProfileScreen
 import com.greencoins.app.screens.ShopScreen
 import com.greencoins.app.screens.ShopViewModel
+import com.greencoins.app.screens.UserViewModel
 import com.greencoins.app.theme.AppColors
 import androidx.compose.runtime.collectAsState
 import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.UserChallengesRepository
-import com.greencoins.app.data.UserRepository
 import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
@@ -78,7 +78,8 @@ fun GreenCoinsApp() {
         }
     }
 
-    var coins by remember { mutableStateOf(0) }
+    val userViewModel: UserViewModel = viewModel()
+    val headerCoins by userViewModel.headerCoins.collectAsState(initial = 0)
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }
     var selectedShopCategory by remember { mutableStateOf<String?>(null) }
@@ -103,16 +104,14 @@ fun GreenCoinsApp() {
         screen = Screen.Plus
     }
 
-    // Load total_gc (for header), joined challenges for the currently logged-in user
+    // Load joined challenges for the currently logged-in user (header GC is from UserViewModel)
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true) {
             val userId = AuthRepository.currentUser?.id
             if (userId != null) {
-                coins = UserRepository.getTotalGc(userId)
                 joinedChallengeIds = UserChallengesRepository.getJoinedChallengeIds(userId)
             }
         } else {
-            coins = 0
             joinedChallengeIds = emptySet()
         }
     }
@@ -142,7 +141,7 @@ fun GreenCoinsApp() {
     ) {
         if (screen != Screen.Plus && screen != Screen.Help) {
             Column(modifier = Modifier.align(Alignment.TopStart)) {
-                Header(coins = coins, onHelp = { screen = Screen.Help })
+                Header(coins = headerCoins, onHelp = { screen = Screen.Help })
                 val onBack = when {
                     screen == Screen.Home -> null
                     screen == Screen.Shop && selectedShopCategory != null -> { { selectedShopCategory = null } }
@@ -202,16 +201,9 @@ fun GreenCoinsApp() {
                             CategoryRewardsScreen(
                                 categories = shopCategories,
                                 selectedCategory = selectedShopCategory!!,
-                                userBalance = coins,
+                                userBalance = headerCoins,
                                 onCategoryChange = { selectedShopCategory = it },
-                                onRedeem = {
-                                    val userId = AuthRepository.currentUser?.id
-                                    if (userId != null) {
-                                        refreshScope.launch {
-                                            coins = UserRepository.getTotalGc(userId)
-                                        }
-                                    }
-                                },
+                                onRedeem = { userViewModel.refresh() },
                                 onBack = { selectedShopCategory = null },
                             )
                         }
