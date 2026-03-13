@@ -34,11 +34,27 @@ import com.greencoins.app.screens.ShopScreen
 import com.greencoins.app.screens.ShopViewModel
 import com.greencoins.app.theme.AppColors
 
+import androidx.compose.runtime.collectAsState
+import com.greencoins.app.data.AuthRepository
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.CircularProgressIndicator
+
 @Composable
 fun GreenCoinsApp() {
+    val isLoggedIn by AuthRepository.isLoggedIn.collectAsState()
+    
+    // We defer rendering until we know the login state (null means loading)
+    if (isLoggedIn == null) {
+         Box(modifier = Modifier.fillMaxSize().background(AppColors.bg), contentAlignment = Alignment.Center) {
+             CircularProgressIndicator(color = AppColors.accent)
+         }
+         return
+    }
+
     var screen by remember { 
         mutableStateOf<Screen>(
-            if (com.greencoins.app.data.AuthRepository.isUserLoggedIn()) Screen.Home else Screen.Auth
+            if (isLoggedIn == true) Screen.Home else Screen.Auth
         ) 
     }
     var coins by remember { mutableStateOf(8420) }

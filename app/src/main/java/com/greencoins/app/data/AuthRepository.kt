@@ -8,8 +8,33 @@ import kotlinx.serialization.json.put
 
 import io.github.jan.supabase.auth.user.UserInfo
 
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
 object AuthRepository {
     private val auth = SupabaseManager.client.auth
+    private val scope = CoroutineScope(Dispatchers.IO)
+
+    private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
+    val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn.asStateFlow()
+
+    init {
+        scope.launch {
+            auth.sessionStatus.collect { status ->
+                when (status) {
+                    is SessionStatus.Authenticated -> _isLoggedIn.value = true
+                    is SessionStatus.NotAuthenticated -> _isLoggedIn.value = false
+                    is SessionStatus.Initializing -> { /* Wait for preferences */ }
+                    is SessionStatus.RefreshFailure -> _isLoggedIn.value = false
+                }
+            }
+        }
+    }
 
     val currentUser: UserInfo?
         get() = auth.currentUserOrNull()
