@@ -49,6 +49,7 @@ import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.theme.GreenCoinsTheme
 import kotlinx.coroutines.launch
+import android.util.Patterns
 
 /**
  * Preserved exactly: background glow, logo, title, subtitle, Google + Email buttons, terms text.
@@ -226,6 +227,11 @@ fun AuthScreen(onLogin: () -> Unit) {
                             try {
                                 isLoading = true
                                 error = null
+                                if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                                    error = "Enter a valid email address"
+                                    isLoading = false
+                                    return@launch
+                                }
                                 if (isSignUp) {
                                     AuthRepository.signUpWithEmail(email, password, name, phone)
                                     if (AuthRepository.isUserLoggedIn()) {
