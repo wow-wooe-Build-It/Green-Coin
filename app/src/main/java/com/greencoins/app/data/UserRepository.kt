@@ -1,7 +1,7 @@
 package com.greencoins.app.data
 
 import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -62,6 +62,28 @@ object UserRepository {
             }
             true
         } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Upload avatar image to Supabase Storage, returns public URL. */
+    suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String = withContext(Dispatchers.IO) {
+        val fileName = "$userId/${System.currentTimeMillis()}.jpg"
+        val bucket = client.storage.from("avatars")
+        bucket.upload(fileName, imageBytes) { upsert = true }
+        bucket.publicUrl(fileName)
+    }
+
+    /** Update user profile fields (only non-null values are updated). */
+    suspend fun updateProfile(userId: String, fullName: String? = null, phone: String? = null, city: String? = null, avatarUrl: String? = null): Boolean = withContext(Dispatchers.IO) {
+        try {
+            fullName?.let { client.from("users").update({ UserProfile::fullName setTo it }) { filter { eq("id", userId) } } }
+            phone?.let { client.from("users").update({ UserProfile::phone setTo it }) { filter { eq("id", userId) } } }
+            city?.let { client.from("users").update({ UserProfile::city setTo it }) { filter { eq("id", userId) } } }
+            avatarUrl?.let { client.from("users").update({ UserProfile::avatarUrl setTo it }) { filter { eq("id", userId) } } }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
             false
         }
     }

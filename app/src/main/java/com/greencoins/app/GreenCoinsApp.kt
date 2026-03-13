@@ -85,6 +85,10 @@ fun GreenCoinsApp() {
     var selectedShopCategory by remember { mutableStateOf<String?>(null) }
     var selectedChallenge by remember { mutableStateOf<com.greencoins.app.data.ChallengeDetailData?>(null) }
     var joinedChallengeIds by remember { mutableStateOf(setOf<String>()) }
+    var showProfilePersonalInfo by remember { mutableStateOf(false) }
+    var showProfileImpactStats by remember { mutableStateOf(false) }
+    var showProfileRedemptionHistory by remember { mutableStateOf(false) }
+    var showProfileHelpSupport by remember { mutableStateOf(false) }
     val shopViewModel: ShopViewModel = viewModel()
     val shopCategories by shopViewModel.categories.collectAsState(initial = emptyList())
 
@@ -94,6 +98,12 @@ fun GreenCoinsApp() {
             screen = Screen.Plus
         } else {
             if (s == Screen.Shop) selectedShopCategory = null
+            if (s != Screen.Profile) {
+                showProfilePersonalInfo = false
+                showProfileImpactStats = false
+                showProfileRedemptionHistory = false
+                showProfileHelpSupport = false
+            }
             screen = s
         }
     }
@@ -129,6 +139,12 @@ fun GreenCoinsApp() {
             screen == Screen.Shop -> screen = Screen.Home
             screen == Screen.Challenges -> screen = Screen.Home
             screen == Screen.ChallengeDetail -> screen = Screen.Challenges
+            screen == Screen.Profile && (showProfilePersonalInfo || showProfileImpactStats || showProfileRedemptionHistory || showProfileHelpSupport) -> {
+                showProfilePersonalInfo = false
+                showProfileImpactStats = false
+                showProfileRedemptionHistory = false
+                showProfileHelpSupport = false
+            }
             screen == Screen.Profile -> screen = Screen.Home
             else -> { }
         }
@@ -148,6 +164,9 @@ fun GreenCoinsApp() {
                     screen == Screen.Shop -> { { screen = Screen.Home } }
                     screen == Screen.Challenges -> { { screen = Screen.Home } }
                     screen == Screen.ChallengeDetail -> { { screen = Screen.Challenges } }
+                    screen == Screen.Profile && (showProfilePersonalInfo || showProfileImpactStats || showProfileRedemptionHistory || showProfileHelpSupport) -> {
+                        { showProfilePersonalInfo = false; showProfileImpactStats = false; showProfileRedemptionHistory = false; showProfileHelpSupport = false }
+                    }
                     screen == Screen.Profile -> { { screen = Screen.Home } }
                     else -> null
                 }
@@ -248,7 +267,17 @@ fun GreenCoinsApp() {
                     } else {
                         screen = Screen.Challenges // Fallback
                     }
-                    Screen.Profile -> ProfileScreen(onLogout = { screen = Screen.Auth })
+                    Screen.Profile -> ProfileScreen(
+                        onLogout = { screen = Screen.Auth },
+                        showPersonalInfo = showProfilePersonalInfo,
+                        onShowPersonalInfoChange = { showProfilePersonalInfo = it },
+                        showImpactStatistics = showProfileImpactStats,
+                        onShowImpactStatisticsChange = { showProfileImpactStats = it },
+                        showRedemptionHistory = showProfileRedemptionHistory,
+                        onShowRedemptionHistoryChange = { showProfileRedemptionHistory = it },
+                        showHelpSupport = showProfileHelpSupport,
+                        onShowHelpSupportChange = { showProfileHelpSupport = it },
+                    )
                     else -> { }
                 }
             }
