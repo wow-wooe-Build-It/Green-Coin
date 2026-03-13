@@ -81,6 +81,7 @@ fun GreenCoinsApp() {
     var selectedMissionId by remember { mutableStateOf<String?>(null) }
     var selectedShopCategory by remember { mutableStateOf<String?>(null) }
     var selectedChallenge by remember { mutableStateOf<com.greencoins.app.data.ChallengeDetailData?>(null) }
+    var joinedChallengeIds by remember { mutableStateOf(setOf<String>()) }
     val shopViewModel: ShopViewModel = viewModel()
 
     fun handleScreenChange(s: Screen) {
@@ -210,7 +211,9 @@ fun GreenCoinsApp() {
                     Screen.ChallengeDetail -> if (selectedChallenge != null) {
                         ChallengeDetailScreen(
                             data = selectedChallenge!!,
-                            onBack = { screen = Screen.Challenges }
+                            onBack = { screen = Screen.Challenges },
+                            isJoined = selectedChallenge!!.id in joinedChallengeIds,
+                            onJoin = { joinedChallengeIds = joinedChallengeIds + selectedChallenge!!.id },
                         )
                     } else {
                         screen = Screen.Challenges // Fallback
