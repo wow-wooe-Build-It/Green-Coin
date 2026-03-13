@@ -58,26 +58,44 @@ import com.greencoins.app.theme.AppColors
 import com.greencoins.app.theme.GreenCoinsTheme
 import com.greencoins.app.ui.toImageVector
 
+import com.greencoins.app.data.UserRepository
+import com.greencoins.app.data.UserProfile
+import com.greencoins.app.data.AuthRepository
+
 @Composable
 fun HomeScreen(
     onMissionSelect: (String) -> Unit,
     onChallengeClick: (ChallengeDetailData) -> Unit = {},
+    refreshHeader: () -> Unit = {}
 ) {
     var missions by remember { mutableStateOf<List<Mission>>(emptyList()) }
     var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
+    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
+    var weeklyStreak by remember { mutableStateOf<List<Boolean>>(emptyList()) }
 
     LaunchedEffect(Unit) {
+        val user = AuthRepository.currentUser
         missions = MissionRepository.getMissions()
         challenges = ChallengeRepository.getChallenges()
+        if (user != null) {
+            userProfile = UserRepository.getProfile(user.id)
+            weeklyStreak = UserRepository.getWeeklyStreak(user.id)
+            refreshHeader()
+        }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
+            .padding(top = 24.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
     ) {
-        StreakProgressCard()
+        StreakProgressCard(
+            streakDays = userProfile?.streakCount ?: 0,
+            userLevel = userProfile?.level ?: 1,
+            missionsCompleted = userProfile?.missionsCompleted ?: 0,
+            weeklyProgress = if (weeklyStreak.size == 7) weeklyStreak else listOf(false, false, false, false, false, false, false)
+        )
         Spacer(modifier = Modifier.height(40.dp))
         // Daily Missions
         Row(
@@ -265,10 +283,12 @@ fun HomeScreen(
 }
 
 @Composable
-fun StreakProgressCard() {
-    val streakDays = 5
-    val userLevel = 2
-    val missionsCompleted = 12
+fun StreakProgressCard(
+    streakDays: Int = 0,
+    userLevel: Int = 1,
+    missionsCompleted: Int = 0,
+    weeklyProgress: List<Boolean> = listOf(false, false, false, false, false, false, false)
+) {
     val missionsRequiredForNextLevel = 20
     val levelTitles = mapOf(
         1 to "Seed",
@@ -277,7 +297,6 @@ fun StreakProgressCard() {
         4 to "Green Guardian",
         5 to "Earth Champion",
     )
-    val weeklyProgress = listOf(true, true, true, false, false, false, false)
     val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     val currentDayIndex = 3 // Thu as placeholder
 

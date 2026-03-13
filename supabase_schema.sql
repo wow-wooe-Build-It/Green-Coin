@@ -7,33 +7,41 @@ create table if not exists public.users (
   email text,
   full_name text,
   avatar_url text,
-  eco_score int default 0,
   total_gc int default 0,
   coins int default 0,
-  trees_planted int default 0,
-  plastic_recycled_kg int default 0,
-  co2_saved_kg int default 0,
   level int default 1,
+  missions_completed int default 0,
+  streak_count int default 0,
+  last_mission_date date,
   global_rank int,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
 -- Add new columns if migrating from existing schema
-alter table public.users add column if not exists trees_planted int default 0;
-alter table public.users add column if not exists plastic_recycled_kg int default 0;
-alter table public.users add column if not exists co2_saved_kg int default 0;
+alter table public.users add column if not exists total_gc int default 0;
+alter table public.users add column if not exists coins int default 0;
+alter table public.users add column if not exists missions_completed int default 0;
+alter table public.users add column if not exists streak_count int default 0;
+alter table public.users add column if not exists last_mission_date date;
 alter table public.users add column if not exists level int default 1;
 alter table public.users add column if not exists global_rank int;
 alter table public.users add column if not exists updated_at timestamptz default now();
 alter table public.users add column if not exists phone text;
 alter table public.users add column if not exists city text;
 
+-- Drop legacy eco score columns if they exist
+alter table public.users drop column if exists eco_score;
+alter table public.users drop column if exists trees_planted;
+alter table public.users drop column if exists plastic_recycled_kg;
+alter table public.users drop column if exists co2_saved_kg;
+
 alter table public.users enable row level security;
 
-create policy "Users can read own profile"
+drop policy if exists "Users can read own profile" on public.users; create policy "Users can read own profile"
   on public.users for select using ( auth.uid() = id );
 
+drop policy if exists "Users can update own profile" on public.users;
 create policy "Users can update own profile"
   on public.users for update using ( auth.uid() = id );
 
@@ -75,6 +83,7 @@ create table if not exists public.challenges (
 alter table public.challenges add column if not exists updated_at timestamptz default now();
 alter table public.challenges enable row level security;
 
+drop policy if exists "Public read access for challenges" on public.challenges;
 create policy "Public read access for challenges"
   on public.challenges for select using ( true );
 
@@ -103,6 +112,7 @@ alter table public.missions add column if not exists updated_at timestamptz defa
 
 alter table public.missions enable row level security;
 
+drop policy if exists "Public read access for missions" on public.missions;
 create policy "Public read access for missions"
   on public.missions for select using ( true );
 
@@ -119,9 +129,11 @@ create table if not exists public.user_challenges (
 
 alter table public.user_challenges enable row level security;
 
+drop policy if exists "Users can read own challenge joins" on public.user_challenges;
 create policy "Users can read own challenge joins"
   on public.user_challenges for select using ( auth.uid() = user_id );
 
+drop policy if exists "Users can insert own challenge joins" on public.user_challenges;
 create policy "Users can insert own challenge joins"
   on public.user_challenges for insert with check ( auth.uid() = user_id );
 
@@ -138,16 +150,29 @@ create table if not exists public.submissions (
   after_image_url text,
   latitude float8,
   longitude float8,
+  location_name text,
+  notes text,
+  reward_coins integer,
   status text default 'pending',
   rejected_reason text,
+  completed_at timestamptz default now(),
+  verified_at timestamptz,
   created_at timestamptz default now()
 );
 
+alter table public.submissions add column if not exists location_name text;
+alter table public.submissions add column if not exists notes text;
+alter table public.submissions add column if not exists reward_coins integer;
+alter table public.submissions add column if not exists completed_at timestamptz default now();
+alter table public.submissions add column if not exists verified_at timestamptz;
+
 alter table public.submissions enable row level security;
 
+drop policy if exists "Users can view own submissions" on public.submissions;
 create policy "Users can view own submissions"
   on public.submissions for select using ( auth.uid() = user_id );
 
+drop policy if exists "Users can create submissions" on public.submissions;
 create policy "Users can create submissions"
   on public.submissions for insert with check ( auth.uid() = user_id );
 
@@ -173,6 +198,7 @@ alter table public.rewards add column if not exists updated_at timestamptz defau
 
 alter table public.rewards enable row level security;
 
+drop policy if exists "Public read access for rewards" on public.rewards;
 create policy "Public read access for rewards"
   on public.rewards for select using ( true );
 
@@ -184,16 +210,19 @@ create table if not exists public.transactions (
   amount int not null,
   description text,
   type text,
-  related_submission_id uuid references public.submissions(id),
-  related_reward_id uuid references public.rewards(id),
+  reference_id uuid,
   created_at timestamptz default now()
 );
 
+alter table public.transactions add column if not exists reference_id uuid;
+
 alter table public.transactions enable row level security;
 
+drop policy if exists "Users can read own transactions" on public.transactions;
 create policy "Users can read own transactions"
   on public.transactions for select using ( auth.uid() = user_id );
 
+drop policy if exists "Users can insert own transactions" on public.transactions;
 create policy "Users can insert own transactions"
   on public.transactions for insert with check ( auth.uid() = user_id );
 
@@ -210,6 +239,7 @@ create table if not exists public.faq (
 
 alter table public.faq enable row level security;
 
+drop policy if exists "Public read access for FAQ" on public.faq;
 create policy "Public read access for FAQ"
   on public.faq for select using ( true );
 
@@ -224,11 +254,149 @@ create table if not exists public.reward_categories (
 
 alter table public.reward_categories enable row level security;
 
+drop policy if exists "Public read access for reward categories" on public.reward_categories;
 create policy "Public read access for reward categories"
   on public.reward_categories for select using ( true );
 
 
+-- 10. LEVELS TABLE
+create table if not exists public.levels (
+  id integer primary key generated by default as identity,
+  level_number integer unique not null,
+  title text not null,
+  missions_required integer not null,
+  coin_reward integer not null,
+  created_at timestamptz default now()
+);
+
+alter table public.levels enable row level security;
+drop policy if exists "Public read access for levels" on public.levels;
+create policy "Public read access for levels" on public.levels for select using (true);
+
+
+-- DATABASE FUNCTIONS & TRIGGERS
+
+-- Handle Mission Verified (Leveling, Streaks, Coins)
+create or replace function public.handle_mission_verified()
+returns trigger as $$
+declare
+  v_today date := current_date;
+  v_yesterday date := current_date - interval '1 day';
+  v_user record;
+  v_next_level record;
+  v_mission_reward int := 0;
+begin
+  -- Only execute if status changed to 'verified'
+  if new.status = 'verified' and (tg_op = 'INSERT' or old.status != 'verified') then
+    
+    -- Get user data
+    select * into v_user from public.users where id = new.user_id for update;
+    if not found then return new; end if;
+
+    -- Get mission reward
+    select gc_reward into v_mission_reward from public.missions where id = new.mission_id;
+    if v_mission_reward is null then v_mission_reward := 0; end if;
+
+    -- Update Mission Timestamps & Reward
+    new.verified_at := now();
+    new.reward_coins := v_mission_reward;
+    if new.completed_at is null then new.completed_at := now(); end if;
+
+    -- Calculate Streak using timezone aware CURRENT_DATE
+    v_today := current_date;
+    v_yesterday := current_date - interval '1 day';
+
+    if v_user.last_mission_date = v_yesterday then
+      v_user.streak_count := coalesce(v_user.streak_count, 0) + 1;
+    elsif v_user.last_mission_date = v_today then
+      -- streak_count stays the same
+      v_user.streak_count := coalesce(v_user.streak_count, 0);
+    else
+      v_user.streak_count := 1;
+    end if;
+
+    -- Update base user stats & grant mission coins
+    v_user.missions_completed := coalesce(v_user.missions_completed, 0) + 1;
+    v_user.last_mission_date := v_today;
+    v_user.coins := coalesce(v_user.coins, 0) + coalesce(v_mission_reward, 0);
+    v_user.total_gc := coalesce(v_user.total_gc, 0) + coalesce(v_mission_reward, 0);
+    
+    -- Insert Transaction Record
+    insert into public.transactions (user_id, amount, type, reference_id)
+    values (new.user_id, v_mission_reward, 'mission_reward', new.id);
+
+    -- Evaluate Level Up
+    loop
+      select * into v_next_level from public.levels where level_number = coalesce(v_user.level, 0) + 1;
+      exit when not found;
+
+      if coalesce(v_user.missions_completed, 0) >= coalesce(v_next_level.missions_required, 0) then
+        v_user.level := v_next_level.level_number;
+        v_user.coins := coalesce(v_user.coins, 0) + coalesce(v_next_level.coin_reward, 0);
+        v_user.total_gc := coalesce(v_user.total_gc, 0) + coalesce(v_next_level.coin_reward, 0);
+      else
+        exit;
+      end if;
+    end loop;
+
+    -- Save back to users table
+    update public.users set 
+      streak_count = v_user.streak_count,
+      missions_completed = v_user.missions_completed,
+      last_mission_date = v_user.last_mission_date,
+      coins = v_user.coins,
+      total_gc = v_user.total_gc,
+      level = v_user.level
+    where id = new.user_id;
+
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_submission_verified on public.submissions;
+drop trigger if exists on_submission_approved on public.submissions;
+
+create trigger on_submission_verified
+  before update or insert on public.submissions
+  for each row execute procedure public.handle_mission_verified();
+
+-- Get User Weekly Streak RPC
+create or replace function public.get_user_streak(p_user_id uuid)
+returns boolean[] as $$
+declare
+  v_days boolean[] := array[false, false, false, false, false, false, false];
+  v_record record;
+  v_day_diff int;
+begin
+  for v_record in 
+    select date(completed_at) as mission_date
+    from public.submissions
+    where user_id = p_user_id and status = 'verified'
+      and date(completed_at) >= current_date - interval '6 days'
+  loop
+    v_day_diff := current_date - v_record.mission_date;
+    if v_day_diff between 0 and 6 then
+      -- Array is 1-indexed. Index 7 is today, Index 1 is 6 days ago.
+      v_days[7 - v_day_diff] := true;
+    end if;
+  end loop;
+  
+  return v_days;
+end;
+$$ language plpgsql security definer;
+
+
 -- SEED DATA
+
+-- Levels
+insert into public.levels (level_number, title, missions_required, coin_reward) values
+(1, 'Seed', 0, 0),
+(2, 'Sprout', 5, 150),
+(3, 'Eco Explorer', 15, 200),
+(4, 'Green Guardian', 30, 300),
+(5, 'Earth Champion', 50, 500)
+on conflict (level_number) do nothing;
 
 -- Reward Categories
 insert into public.reward_categories (name, sort_order) values

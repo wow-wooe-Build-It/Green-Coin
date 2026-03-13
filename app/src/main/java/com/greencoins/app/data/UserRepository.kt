@@ -1,6 +1,9 @@
 package com.greencoins.app.data
 
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -48,21 +51,14 @@ object UserRepository {
         }
     }
 
-    // Update specific fields
-    suspend fun updateEcoScore(userId: String, newScore: Int) = withContext(Dispatchers.IO) {
+    // Fetch weekly streak boolean array via RPC
+    suspend fun getWeeklyStreak(userId: String): List<Boolean> = withContext(Dispatchers.IO) {
         try {
-            client.from("users").update(
-                {
-                    UserProfile::ecoScore setTo newScore
-                }
-            ) {
-                filter {
-                    eq("id", userId)
-                }
-            }
-            true
+            val result = client.postgrest.rpc("get_user_streak", mapOf("p_user_id" to userId))
+            result.decodeAs<List<Boolean>>()
         } catch (e: Exception) {
-            false
+            e.printStackTrace()
+            listOf(false, false, false, false, false, false, false)
         }
     }
 
