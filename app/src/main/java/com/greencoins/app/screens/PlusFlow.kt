@@ -244,16 +244,15 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
     var afterImageUri by remember { mutableStateOf<Uri?>(null) }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
+    var pendingImageSlot by remember { mutableStateOf<Boolean?>(null) } // true = before, false = after
 
-    val beforeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            beforeImageUri = uri
+    val mediaLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        when (pendingImageSlot) {
+            true -> if (uri != null) beforeImageUri = uri
+            false -> if (uri != null) afterImageUri = uri
+            null -> { }
         }
-    }
-    val afterLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            afterImageUri = uri
-        }
+        pendingImageSlot = null
     }
 
     Column(
@@ -288,7 +287,8 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
                     .background(AppColors.accent.copy(alpha = 0.05f), RoundedCornerShape(32.dp))
                     .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
                     .clickable(enabled = !isSubmitting) {
-                        beforeLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        pendingImageSlot = true
+                        mediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                 contentAlignment = Alignment.Center,
             ) {
@@ -316,7 +316,8 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
                     .background(AppColors.accent.copy(alpha = 0.05f), RoundedCornerShape(32.dp))
                     .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
                     .clickable(enabled = !isSubmitting) {
-                        afterLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        pendingImageSlot = false
+                        mediaLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                 contentAlignment = Alignment.Center,
             ) {
