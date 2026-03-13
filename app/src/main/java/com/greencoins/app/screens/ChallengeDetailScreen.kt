@@ -22,13 +22,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -37,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
 import com.greencoins.app.components.ImageWithFallback
+import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.ChallengeDetailData
 import com.greencoins.app.data.ChallengeDetailRepository
 import com.greencoins.app.data.LeaderboardEntry
@@ -46,8 +53,48 @@ import com.greencoins.app.theme.AppColors
 fun ChallengeDetailScreen(
     data: ChallengeDetailData,
     onBack: () -> Unit,
+    isJoined: Boolean = false,
+    onJoin: () -> Unit = {},
 ) {
-    val leaderboard = ChallengeDetailRepository.getMockLeaderboard(data.id.hashCode())
+    var showJoinDialog by remember { mutableStateOf(false) }
+
+    val baseLeaderboard = remember(data.id) { ChallengeDetailRepository.getMockLeaderboard(data.id.hashCode()) }
+    val userName = remember {
+        AuthRepository.currentUser?.userMetadata?.get("full_name")?.toString()?.replace("\"", "")
+            ?: AuthRepository.currentUser?.email?.split("@")?.firstOrNull()?.replaceFirstChar { it.uppercase() }
+            ?: "Current User"
+    }
+    val leaderboard = if (isJoined) {
+        baseLeaderboard.map { it.copy(isCurrentUser = false) } +
+            LeaderboardEntry(
+                rank = baseLeaderboard.size + 1,
+                username = userName,
+                coins = 0,
+                isCurrentUser = true,
+            )
+    } else {
+        baseLeaderboard
+    }
+
+    if (showJoinDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showJoinDialog = false
+                onJoin()
+            },
+            title = { Text("Success", color = AppColors.white, fontWeight = FontWeight.Bold) },
+            text = { Text("You have successfully joined the challenge", color = AppColors.textSecondary) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showJoinDialog = false
+                    onJoin()
+                }) {
+                    Text("OK", color = AppColors.accent, fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = AppColors.border,
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -130,7 +177,11 @@ fun ChallengeDetailScreen(
         }
 
         // Content
-        Column(modifier = Modifier.padding(24.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .padding(bottom = 96.dp),
+        ) {
             // Stats Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -217,14 +268,28 @@ fun ChallengeDetailScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
             Button(
-                onClick = { /* Join */ },
+                onClick = {
+                    if (!isJoined) {
+                        showJoinDialog = true
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent, contentColor = AppColors.black),
-                shape = RoundedCornerShape(16.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.accent,
+                    contentColor = AppColors.black,
+                    disabledContainerColor = AppColors.border,
+                    disabledContentColor = AppColors.textSecondary,
+                ),
+                shape = RoundedCornerShape(16.dp),
+                enabled = !isJoined,
             ) {
-                Text("Join Challenge", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(
+                    text = if (isJoined) "Joined" else "Join Challenge",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                )
             }
         }
     }
