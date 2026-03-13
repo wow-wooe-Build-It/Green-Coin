@@ -237,12 +237,86 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
 }
 
 @Composable
+private fun MissionReminderCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppColors.border, RoundedCornerShape(24.dp))
+            .border(1.dp, AppColors.accent.copy(alpha = 0.6f), RoundedCornerShape(24.dp))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(AppColors.accent.copy(alpha = 0.15f), CircleShape)
+                    .border(1.dp, AppColors.accent, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = missionIconPlaceholder().toImageVector(),
+                    contentDescription = "Mission",
+                    tint = AppColors.accent,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Column {
+                Text(
+                    text = "Mission",
+                    color = AppColors.textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "Plant a Native Tree",
+                    color = AppColors.white,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "Reward",
+                    color = AppColors.textSecondary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "+250 GreenCoins",
+                    color = AppColors.accent,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+// Simple placeholder icon mapping for the reminder card
+private fun missionIconPlaceholder(): com.greencoins.app.data.MissionIcon {
+    return com.greencoins.app.data.MissionIcon.TreePine
+}
+
+@Composable
 private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var beforeImageUri by remember { mutableStateOf<Uri?>(null) }
     var afterImageUri by remember { mutableStateOf<Uri?>(null) }
     var description by remember { mutableStateOf("") }
+    var location by remember { mutableStateOf("") }
+    var isConfirmed by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
     var pendingImageSlot by remember { mutableStateOf<Boolean?>(null) } // true = before, false = after
 
@@ -274,7 +348,11 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
                 Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
             }
         }
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        MissionReminderCard()
+
+        Spacer(modifier = Modifier.height(32.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -338,22 +416,38 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.border, RoundedCornerShape(24.dp))
-                .border(1.dp, AppColors.gray333)
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+
+        // Location input (manual text only, no GPS)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Place, contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.size(12.dp))
-                Text("GPS: 28.6139° N, 77.2090° E", color = AppColors.white, fontSize = 14.sp)
-            }
-            Text("LOCKED", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Location",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+            )
+            TextField(
+                value = location,
+                onValueChange = { location = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                placeholder = { Text("Where did this happen?", color = AppColors.gray555) },
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = AppColors.white,
+                    unfocusedTextColor = AppColors.white,
+                    focusedContainerColor = AppColors.border,
+                    unfocusedContainerColor = AppColors.border,
+                    focusedIndicatorColor = AppColors.accent.copy(alpha = 0.5f),
+                    unfocusedIndicatorColor = AppColors.gray333,
+                ),
+                shape = RoundedCornerShape(24.dp),
+                enabled = !isSubmitting
+            )
         }
+
         Spacer(modifier = Modifier.height(24.dp))
         TextField(
             value = description,
@@ -361,7 +455,7 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             modifier = Modifier
                 .fillMaxWidth()
                 .height(128.dp),
-            placeholder = { Text("Tell us about your impact (optional)", color = AppColors.gray555) },
+            placeholder = { Text("Describe what you did (optional)", color = AppColors.gray555) },
             colors = TextFieldDefaults.colors(
                 focusedTextColor = AppColors.white,
                 unfocusedTextColor = AppColors.white,
@@ -373,7 +467,30 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             shape = RoundedCornerShape(24.dp),
             enabled = !isSubmitting
         )
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Confirmation checkbox
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.material3.Checkbox(
+                checked = isConfirmed,
+                onCheckedChange = { isConfirmed = it },
+                enabled = !isSubmitting,
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Text(
+                text = "I confirm that this action was completed by me.",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
                 if (isSubmitting) return@Button
