@@ -232,15 +232,19 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
 private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var beforeImageUri by remember { mutableStateOf<Uri?>(null) }
+    var afterImageUri by remember { mutableStateOf<Uri?>(null) }
     var description by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
 
-    val contentResolver = context.contentResolver
-    
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+    val beforeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            imageUri = uri
+            beforeImageUri = uri
+        }
+    }
+    val afterLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            afterImageUri = uri
         }
     }
 
@@ -265,38 +269,50 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Placeholder "Before" box
+            // "Before" box - Clickable for upload
             Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(1f)
-                    .background(AppColors.border.copy(alpha = 0.3f), RoundedCornerShape(32.dp))
-                    .border(2.dp, AppColors.border, RoundedCornerShape(32.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Before", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            
-            // "After" box - Clickable for upload
-             Box(
                 modifier = Modifier
                     .weight(1f)
                     .aspectRatio(1f)
                     .background(AppColors.accent.copy(alpha = 0.05f), RoundedCornerShape(32.dp))
                     .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
                     .clickable(enabled = !isSubmitting) {
-                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        beforeLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                if (imageUri != null) {
+                if (beforeImageUri != null) {
                     AsyncImage(
-                        model = imageUri,
-                        contentDescription = "Selected Proof",
+                        model = beforeImageUri,
+                        contentDescription = "Before Image",
+                        modifier = Modifier.fillMaxSize().graphicsLayer { clip = true; shape = RoundedCornerShape(32.dp) },
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Before", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // "After" box - Clickable for upload
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(1f)
+                    .background(AppColors.accent.copy(alpha = 0.05f), RoundedCornerShape(32.dp))
+                    .border(2.dp, AppColors.accent.copy(alpha = 0.5f), RoundedCornerShape(32.dp))
+                    .clickable(enabled = !isSubmitting) {
+                        afterLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                if (afterImageUri != null) {
+                    AsyncImage(
+                        model = afterImageUri,
+                        contentDescription = "After Image",
                         modifier = Modifier.fillMaxSize().graphicsLayer { clip = true; shape = RoundedCornerShape(32.dp) },
                         contentScale = ContentScale.Crop
                     )
@@ -353,26 +369,29 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
                     isSubmitting = true
                     try {
                         val userId = AuthRepository.currentUser?.id
-                        if (userId != null && imageUri != null) {
-                             val inputStream = context.contentResolver.openInputStream(imageUri!!)
-                             if (inputStream != null) {
-                                 val bytes = inputStream.use { it.readBytes() }
-                                 try {
-                                     val imageUrl = MissionRepository.uploadMissionProof(userId, bytes)
-                                     MissionRepository.submitMission(userId, mission.id, imageUrl, description)
-                                     onNext()
-                                 } catch (e: Exception) {
-                                     e.printStackTrace()
-                                     android.widget.Toast.makeText(context, "Upload failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                                 }
-                             } else {
-                                 android.widget.Toast.makeText(context, "Could not read image", android.widget.Toast.LENGTH_SHORT).show()
-                             }
+                        if (userId != null && beforeImageUri != null && afterImageUri != null) {
+                            val beforeInputStream = context.contentResolver.openInputStream(beforeImageUri!!)
+                            val afterInputStream = context.contentResolver.openInputStream(afterImageUri!!)
+                            if (beforeInputStream != null && afterInputStream != null) {
+                                val beforeBytes = beforeInputStream.use { it.readBytes() }
+                                val afterBytes = afterInputStream.use { it.readBytes() }
+                                try {
+                                    val beforeImageUrl = MissionRepository.uploadMissionProof(userId, beforeBytes, "before")
+                                    val afterImageUrl = MissionRepository.uploadMissionProof(userId, afterBytes, "after")
+                                    MissionRepository.submitMission(userId, mission.id, beforeImageUrl, afterImageUrl, description)
+                                    onNext()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    android.widget.Toast.makeText(context, "Upload failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                android.widget.Toast.makeText(context, "Could not read image(s)", android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         } else {
                             if (userId == null) {
                                 android.widget.Toast.makeText(context, "User not logged in", android.widget.Toast.LENGTH_SHORT).show()
                             } else {
-                                android.widget.Toast.makeText(context, "Please select an image", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "Please select both Before and After images", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
                     } catch(e: Exception) {
@@ -386,7 +405,7 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             modifier = Modifier.fillMaxWidth().height(64.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent, contentColor = AppColors.black),
             shape = RoundedCornerShape(24.dp),
-            enabled = !isSubmitting && imageUri != null // Disable if no image
+            enabled = !isSubmitting && beforeImageUri != null && afterImageUri != null
         ) {
             if (isSubmitting) {
                 CircularProgressIndicator(color = AppColors.black, modifier = Modifier.size(24.dp))
