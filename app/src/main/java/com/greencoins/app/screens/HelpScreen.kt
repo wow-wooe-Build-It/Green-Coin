@@ -86,42 +86,21 @@ fun HelpScreen(onClose: () -> Unit) {
             }
         }
         Spacer(modifier = Modifier.height(40.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.border, RoundedCornerShape(32.dp))
-                .border(1.dp, AppColors.gray333)
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(AppColors.accent.copy(alpha = 0.1f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(com.greencoins.app.ui.NavIcons.Help, contentDescription = null, tint = AppColors.accent, modifier = Modifier.size(24.dp))
+        GlassCard(modifier = Modifier.padding(vertical = 8.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Need Help?", color = AppColors.accent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "If you have questions about missions, rewards, or your GreenCoins balance, our team is here to help.",
+                    color = AppColors.textSecondary,
+                    fontSize = 12.sp,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("support@greencoins.app", color = AppColors.accent.copy(alpha = 0.9f), fontSize = 12.sp)
+                Text("hello@greencoins.app", color = AppColors.accent.copy(alpha = 0.9f), fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("We usually respond within 24 hours.", color = AppColors.gray555, fontSize = 10.sp)
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Still need help?", color = AppColors.white, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Our Eco-Experts are available 24/7 to assist with your impact journey.",
-                color = AppColors.textSecondary,
-                fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.accent, contentColor = AppColors.black),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text("Chat with an Eco-Expert", fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Average response time: 2 mins", color = AppColors.gray555, fontSize = 10.sp)
         }
     }
 }
