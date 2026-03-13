@@ -1,7 +1,10 @@
 package com.greencoins.app.screens
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -30,10 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
@@ -48,29 +54,19 @@ import com.greencoins.app.data.ChallengeDetailRepository
 import com.greencoins.app.data.ChallengeRepository
 import com.greencoins.app.data.Mission
 import com.greencoins.app.data.MissionRepository
-import com.greencoins.app.data.UserProfile
-import com.greencoins.app.data.UserRepository
 import com.greencoins.app.theme.AppColors
 import com.greencoins.app.theme.GreenCoinsTheme
 import com.greencoins.app.ui.toImageVector
-
-import io.github.jan.supabase.auth.auth
-import com.greencoins.app.data.SupabaseManager
 
 @Composable
 fun HomeScreen(
     onMissionSelect: (String) -> Unit,
     onChallengeClick: (ChallengeDetailData) -> Unit = {},
 ) {
-    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
     var missions by remember { mutableStateOf<List<Mission>>(emptyList()) }
     var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        val userId = SupabaseManager.client.auth.currentUserOrNull()?.id
-        if (userId != null) {
-            userProfile = UserRepository.getProfile(userId)
-        }
         missions = MissionRepository.getMissions()
         challenges = ChallengeRepository.getChallenges()
     }
@@ -80,87 +76,8 @@ fun HomeScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
-    ){
-        // Hero - Impact Dashboard
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(240.dp),
-            ) {
-                val progress = 0.75f
-                val ringColor = AppColors.accent
-                
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 16.dp.toPx()
-                    val startAngle = 140f
-                    val sweepAngle = 260f
-                    
-                    // Background Track
-                    drawArc(
-                        color = ringColor.copy(alpha = 0.2f),
-                        startAngle = startAngle,
-                        sweepAngle = sweepAngle,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                    
-                    // Glow Effect
-                    drawArc(
-                         color = ringColor.copy(alpha = 0.2f),
-                         startAngle = startAngle,
-                         sweepAngle = sweepAngle * progress,
-                         useCenter = false,
-                         style = Stroke(width = strokeWidth + 12.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    // Foreground Ring
-                    drawArc(
-                        color = ringColor,
-                        startAngle = startAngle,
-                        sweepAngle = sweepAngle * progress,
-                        useCenter = false,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = (userProfile?.ecoScore ?: 0).toString(),
-                        color = AppColors.white,
-                        fontSize = 48.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = "ECO-SCORE",
-                        color = AppColors.textSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${userProfile?.treesPlanted ?: 0}", color = AppColors.white, fontWeight = FontWeight.Bold)
-                    Text("Trees", color = AppColors.textSecondary, fontSize = 10.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${userProfile?.plasticRecycledKg ?: 0}kg", color = AppColors.white, fontWeight = FontWeight.Bold)
-                    Text("Recycled", color = AppColors.textSecondary, fontSize = 10.sp)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${userProfile?.co2SavedKg ?: 0}kg", color = AppColors.white, fontWeight = FontWeight.Bold)
-                    Text("CO₂ Saved", color = AppColors.textSecondary, fontSize = 10.sp)
-                }
-            }
-        }
+    ) {
+        StreakProgressCard()
         Spacer(modifier = Modifier.height(40.dp))
         // Daily Missions
         Row(
@@ -343,6 +260,213 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun StreakProgressCard() {
+    val streakDays = 5
+    val userLevel = 2
+    val missionsCompleted = 12
+    val missionsRequiredForNextLevel = 20
+    val levelTitles = mapOf(
+        1 to "Seed",
+        2 to "Sprout",
+        3 to "Eco Explorer",
+        4 to "Green Guardian",
+        5 to "Earth Champion",
+    )
+    val weeklyProgress = listOf(true, true, true, false, false, false, false)
+    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    val currentDayIndex = 3 // Thu as placeholder
+
+    val rawProgress = if (missionsRequiredForNextLevel > 0) {
+        missionsCompleted / missionsRequiredForNextLevel.toFloat()
+    } else {
+        0f
+    }
+    val animatedProgress by animateFloatAsState(
+        targetValue = rawProgress.coerceIn(0f, 1f),
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "missionsProgress",
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(24.dp, RoundedCornerShape(24.dp), clip = false)
+            .background(Color(0xFF111111), RoundedCornerShape(24.dp))
+            .padding(20.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(AppColors.accent, AppColors.accent.copy(alpha = 0.1f)),
+                                center = androidx.compose.ui.geometry.Offset.Zero,
+                                radius = 80f,
+                            ),
+                            CircleShape,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Whatshot,
+                        contentDescription = "Streak",
+                        tint = AppColors.black,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Column {
+                    Text(
+                        text = "STREAK",
+                        color = AppColors.textSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "$streakDays DAYS",
+                        color = AppColors.white,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Filled.Whatshot,
+                contentDescription = "Activity",
+                tint = AppColors.textSecondary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            dayLabels.forEachIndexed { index, label ->
+                val isCompleted = weeklyProgress.getOrNull(index) == true
+                val isCurrent = index == currentDayIndex
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    when {
+                        isCompleted -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(AppColors.accent, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = "Completed",
+                                    tint = AppColors.black,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            }
+                        }
+
+                        isCurrent -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(Color.Transparent, CircleShape)
+                                    .border(
+                                        width = 2.dp,
+                                        color = AppColors.accent,
+                                        shape = CircleShape,
+                                    ),
+                            )
+                        }
+
+                        else -> {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .background(AppColors.gray333, CircleShape),
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = label,
+                        color = AppColors.textSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "LEVEL $userLevel",
+                color = AppColors.accent,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = levelTitles[userLevel] ?: "Eco Hero",
+                color = AppColors.white,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = "$missionsCompleted / $missionsRequiredForNextLevel missions",
+                color = AppColors.textSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .background(AppColors.border, RoundedCornerShape(9999.dp)),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = animatedProgress.coerceIn(0f, 1f))
+                    .height(10.dp)
+                    .shadow(16.dp, RoundedCornerShape(9999.dp), clip = false)
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                AppColors.accent,
+                                AppColors.accent.copy(alpha = 0.8f),
+                            ),
+                        ),
+                        RoundedCornerShape(9999.dp),
+                    ),
+            )
         }
     }
 }
