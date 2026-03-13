@@ -1,6 +1,11 @@
 package com.greencoins.app.screens
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,27 +14,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.UserRepository
@@ -40,39 +45,89 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
 import com.greencoins.app.components.ImageWithFallback
+import com.greencoins.app.screens.PersonalInformationScreen
 import com.greencoins.app.theme.AppColors
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
 
 @Composable
-fun ProfileScreen(onLogout: () -> Unit) {
+fun ProfileScreen(
+    onLogout: () -> Unit,
+    showPersonalInfo: Boolean = false,
+    onShowPersonalInfoChange: (Boolean) -> Unit = {},
+    showImpactStatistics: Boolean = false,
+    onShowImpactStatisticsChange: (Boolean) -> Unit = {},
+    showRedemptionHistory: Boolean = false,
+    onShowRedemptionHistoryChange: (Boolean) -> Unit = {},
+    showHelpSupport: Boolean = false,
+    onShowHelpSupportChange: (Boolean) -> Unit = {},
+) {
     var user by remember { mutableStateOf<io.github.jan.supabase.auth.user.UserInfo?>(null) }
     var userProfile by remember { mutableStateOf<com.greencoins.app.data.UserProfile?>(null) }
-    var showPersonalInfo by remember { mutableStateOf(false) }
-    
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val bytes = inputStream?.use { it.readBytes() }
+                    if (bytes != null && user != null) {
+                        val url = UserRepository.uploadAvatar(user!!.id, bytes)
+                        UserRepository.updateProfile(user!!.id, avatarUrl = url)
+                        userProfile = UserRepository.getProfile(user!!.id)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     androidx.compose.runtime.LaunchedEffect(Unit) {
         user = AuthRepository.currentUser
         user?.id?.let { userId ->
             userProfile = UserRepository.getProfile(userId)
         }
     }
-    
+
+    BackHandler(enabled = showImpactStatistics || showRedemptionHistory || showHelpSupport || showPersonalInfo) {
+        onShowImpactStatisticsChange(false)
+        onShowRedemptionHistoryChange(false)
+        onShowHelpSupportChange(false)
+        onShowPersonalInfoChange(false)
+    }
+
+    if (showImpactStatistics && user != null) {
+        ImpactStatisticsScreen(userId = user!!.id, onBack = { onShowImpactStatisticsChange(false) })
+        return
+    }
+    if (showRedemptionHistory && user != null) {
+        RedemptionHistoryScreen(userId = user!!.id, onBack = { onShowRedemptionHistoryChange(false) })
+        return
+    }
+    if (showHelpSupport) {
+        HelpSupportScreen(onBack = { onShowHelpSupportChange(false) })
+        return
+    }
     if (showPersonalInfo && user != null) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showPersonalInfo = false },
-            title = { Text("Personal Information") },
-            text = {
-                Column {
-                    Text("Email: ${user?.email ?: "N/A"}")
-                    Text("Phone: ${user?.userMetadata?.get("phone")?.toString()?.replace("\"", "") ?: "N/A"}")
-                    Text("ID: ${user?.id}")
-                    Text("Last Sign In: ${user?.lastSignInAt ?: "N/A"}")
+        PersonalInformationScreen(
+            userId = user!!.id,
+            userProfile = userProfile,
+            emailFromAuth = user?.email,
+            phoneFromAuth = user?.userMetadata?.get("phone")?.toString()?.replace("\"", ""),
+            onBack = { onShowPersonalInfoChange(false) },
+            onProfileUpdated = {
+                scope.launch {
+                    user?.id?.let { userId ->
+                        userProfile = UserRepository.getProfile(userId)
+                    }
+                    onShowPersonalInfoChange(false)
                 }
             },
-            confirmButton = {
-                androidx.compose.material3.TextButton(onClick = { showPersonalInfo = false }) {
-                    Text("Close")
-                }
-            }
         )
+        return
     }
 
     Column(
@@ -90,13 +145,29 @@ fun ProfileScreen(onLogout: () -> Unit) {
                     modifier = Modifier
                         .size(128.dp)
                         .padding(4.dp)
-                        .background(AppColors.accent, RoundedCornerShape(48.dp)),
+                        .background(AppColors.accent, RoundedCornerShape(48.dp))
+                        .clickable { imagePickerLauncher.launch("image/*") },
                 ) {
                     ImageWithFallback(
                         src = userProfile?.avatarUrl ?: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize(),
                     )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                            .size(28.dp)
+                            .background(AppColors.accent, RoundedCornerShape(14.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = "Change photo",
+                            tint = AppColors.black,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -143,10 +214,10 @@ fun ProfileScreen(onLogout: () -> Unit) {
         }
         Spacer(modifier = Modifier.height(40.dp))
         listOf(
-            Triple(Icons.Default.Person, "Personal Information", { showPersonalInfo = true }),
-            Triple(Icons.Default.Star, "Impact Statistics", {}),
-            Triple(Icons.Default.ShoppingBag, "Redemption History", {}),
-            Triple(com.greencoins.app.ui.NavIcons.Help, "Help & Support", {}),
+            Triple(Icons.Default.Person, "Personal Information", { onShowPersonalInfoChange(true) }),
+            Triple(Icons.Default.Star, "Impact Statistics", { onShowImpactStatisticsChange(true) }),
+            Triple(Icons.Default.ShoppingBag, "Redemption History", { onShowRedemptionHistoryChange(true) }),
+            Triple(com.greencoins.app.ui.NavIcons.Help, "Help & Support", { onShowHelpSupportChange(true) }),
         ).forEach { (icon, label, onClickAction) ->
             Row(
                 modifier = Modifier

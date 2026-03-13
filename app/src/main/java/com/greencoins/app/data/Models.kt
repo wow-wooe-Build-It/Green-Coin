@@ -17,6 +17,9 @@ data class UserProfile(
     val email: String? = null,
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    val phone: String? = null,
+    val city: String? = null,
+    @SerialName("eco_score") val ecoScore: Int = 0,
     @SerialName("total_gc") val totalGc: Int = 0,
     val coins: Int = 0,
     val level: Int = 1,
@@ -92,6 +95,29 @@ data class Transaction(
     @SerialName("created_at") val createdAt: String? = null
 )
 
+
+/** Completed mission entry for Impact Statistics. */
+data class CompletedMissionItem(
+    val submissionId: String,
+    val missionTitle: String,
+    val dateCompleted: String?,
+    val gcEarned: Int,
+    val imageUrl: String?,
+)
+
+/** Completed challenge entry for Impact Statistics. */
+data class CompletedChallengeItem(
+    val challengeId: String,
+    val challengeName: String,
+    val joinedDate: String?,
+    val gcReward: Int,
+)
+
+@Serializable
+data class ImpactUserChallengeRow(
+    @SerialName("challenge_id") val challengeId: String,
+    @SerialName("joined_at") val joinedAt: String? = null,
+)
 
 /** Unified challenge data for the detail screen. */
 data class ChallengeDetailData(

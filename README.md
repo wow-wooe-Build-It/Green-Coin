@@ -17,7 +17,7 @@ This is a **Kotlin** port of the GreenCoins React/TypeScript app. Every screen, 
 2. Use a device or emulator with **API 26+**.
 3. Run the **app** configuration (e.g. Run ▶️).
 
-If the Gradle wrapper is missing, create it in Android Studio: **File → New → New Project**, then replace its contents with this project, or run in a terminal (from repo root):
+If the Gradle wrapper is missing, create it in Android Studio: **File → New → New Project**, then replace its contents with this project, or run in a terminal (from repository root):
 
 ```bash
 cd kotlin-app

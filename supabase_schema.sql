@@ -27,6 +27,8 @@ alter table public.users add column if not exists last_mission_date date;
 alter table public.users add column if not exists level int default 1;
 alter table public.users add column if not exists global_rank int;
 alter table public.users add column if not exists updated_at timestamptz default now();
+alter table public.users add column if not exists phone text;
+alter table public.users add column if not exists city text;
 
 -- Drop legacy eco score columns if they exist
 alter table public.users drop column if exists eco_score;
