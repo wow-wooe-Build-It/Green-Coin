@@ -57,6 +57,16 @@ fun GreenCoinsApp() {
             if (isLoggedIn == true) Screen.Home else Screen.Auth
         ) 
     }
+
+    // Force redirection when authentication state changes externally (like OAuth deeplink return)
+    androidx.compose.runtime.LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn == true && screen == Screen.Auth) {
+            screen = Screen.Home
+        } else if (isLoggedIn == false && screen != Screen.Auth) {
+            screen = Screen.Auth
+        }
+    }
+
     var coins by remember { mutableStateOf(8420) }
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }

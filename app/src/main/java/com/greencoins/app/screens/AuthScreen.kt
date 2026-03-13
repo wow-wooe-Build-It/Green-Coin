@@ -277,17 +277,13 @@ fun AuthScreen(onLogin: () -> Unit) {
                                 isLoading = true
                                 error = null
                                 // Note: This will open the browser. When the user returns via deep link,
-                                // the session effectively resumes.
+                                // the session effectively resumes and GreenCoinsApp will observe the state change.
                                 AuthRepository.signInWithGoogle()
-                                if (AuthRepository.isUserLoggedIn()) {
-                                    onLogin()
-                                }
+                                // We purposefully do NOT call onLogin() here because signInWithGoogle opens
+                                // the browser async. The app will automatically switch to HomeScreen once the 
+                                // deep link returns and AuthRepository.isLoggedIn emits true in GreenCoinsApp!
                             } catch (e: Exception) {
-                                // If the user cancels or network fails
-                                // Check if simply cancelled vs error
-                                // But for now generic error handling
                                 error = e.message ?: "Google Sign-In failed"
-                            } finally {
                                 isLoading = false
                             }
                         }
