@@ -58,7 +58,7 @@ fun ChallengesScreen(onChallengeClick: (ChallengeDetailData) -> Unit = {}) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
+            .padding(top = 12.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
