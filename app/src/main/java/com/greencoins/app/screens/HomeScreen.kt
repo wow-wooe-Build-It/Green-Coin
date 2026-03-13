@@ -2,6 +2,7 @@ package com.greencoins.app.screens
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
 import com.greencoins.app.components.ImageWithFallback
 import com.greencoins.app.data.Challenge
+import com.greencoins.app.data.ChallengeDetailData
+import com.greencoins.app.data.ChallengeDetailRepository
 import com.greencoins.app.data.ChallengeRepository
 import com.greencoins.app.data.Mission
 import com.greencoins.app.data.MissionRepository
@@ -55,7 +58,10 @@ import io.github.jan.supabase.auth.auth
 import com.greencoins.app.data.SupabaseManager
 
 @Composable
-fun HomeScreen(onMissionSelect: (String) -> Unit) {
+fun HomeScreen(
+    onMissionSelect: (String) -> Unit,
+    onChallengeClick: (ChallengeDetailData) -> Unit = {},
+) {
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }
     var missions by remember { mutableStateOf<List<Mission>>(emptyList()) }
     var challenges by remember { mutableStateOf<List<Challenge>>(emptyList()) }
@@ -269,7 +275,8 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                     modifier = Modifier
                         .width(280.dp)
                         .height(160.dp)
-                        .padding(4.dp),
+                        .padding(4.dp)
+                        .clickable { onChallengeClick(ChallengeDetailRepository.toDetail(c)) },
                 ) {
                     val isPreview = LocalInspectionMode.current
 
@@ -326,7 +333,7 @@ fun HomeScreen(onMissionSelect: (String) -> Unit) {
                             Text(c.title, color = AppColors.white, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
-                            onClick = {},
+                            onClick = { onChallengeClick(ChallengeDetailRepository.toDetail(c)) },
                             modifier = Modifier.height(32.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = AppColors.white),
                             border = androidx.compose.foundation.BorderStroke(1.dp, AppColors.white.copy(alpha = 0.2f)),

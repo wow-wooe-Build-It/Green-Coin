@@ -141,7 +141,13 @@ fun GreenCoinsApp() {
             ) { current ->
                 when (current) {
                     Screen.Auth -> { }
-                    Screen.Home -> HomeScreen(onMissionSelect = ::handleMissionSelect)
+                    Screen.Home -> HomeScreen(
+                        onMissionSelect = ::handleMissionSelect,
+                        onChallengeClick = { data ->
+                            selectedChallenge = data
+                            screen = Screen.ChallengeDetail
+                        },
+                    )
                     Screen.Shop -> when {
                         selectedShopCategory == null -> ShopScreen(
                             categories = shopViewModel.categories,
