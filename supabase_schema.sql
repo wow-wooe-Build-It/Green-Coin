@@ -453,4 +453,23 @@ select * from (values
 ) v(question, answer, sort_order)
 where not exists (select 1 from public.faq limit 1);
 
--- Storage: Create buckets 'mission-proofs' and 'avatars' in Supabase Dashboard
+-- Storage: Create buckets 'mission-proofs' and 'avatar' in Supabase Dashboard
+
+-- STORAGE POLICIES FOR 'avatar' BUCKET
+-- Note: You must first manually create the 'avatar' bucket as PUBLIC in the Supabase Dashboard, 
+-- then run these policies to allow users to upload and update their own avatars.
+
+insert into storage.buckets (id, name, public) values ('avatar', 'avatar', true) on conflict (id) do nothing;
+
+create policy "Avatar images are publicly accessible."
+  on storage.objects for select
+  using ( bucket_id = 'avatar' );
+
+create policy "Users can upload their own avatar."
+  on storage.objects for insert
+  with check ( bucket_id = 'avatar' and auth.uid()::text = (storage.foldername(name))[1] );
+
+create policy "Users can update their own avatar."
+  on storage.objects for update
+  using ( bucket_id = 'avatar' and auth.uid()::text = (storage.foldername(name))[1] );
+

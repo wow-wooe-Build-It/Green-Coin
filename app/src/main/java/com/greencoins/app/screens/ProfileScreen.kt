@@ -149,7 +149,7 @@ fun ProfileScreen(
                         .clickable { imagePickerLauncher.launch("image/*") },
                 ) {
                     ImageWithFallback(
-                        src = userProfile?.avatarUrl ?: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
+                        src = userProfile?.avatarUrl ?: "https://www.pngkey.com/png/full/115-1150152_default-profile-picture-avatar-png-green.png",
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize(),
                     )

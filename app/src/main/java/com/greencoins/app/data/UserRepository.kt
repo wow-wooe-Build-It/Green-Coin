@@ -65,7 +65,7 @@ object UserRepository {
     /** Upload avatar image to Supabase Storage, returns public URL. */
     suspend fun uploadAvatar(userId: String, imageBytes: ByteArray): String = withContext(Dispatchers.IO) {
         val fileName = "$userId/${System.currentTimeMillis()}.jpg"
-        val bucket = client.storage.from("avatars")
+        val bucket = client.storage.from("avatar")
         bucket.upload(fileName, imageBytes) { upsert = true }
         bucket.publicUrl(fileName)
     }
