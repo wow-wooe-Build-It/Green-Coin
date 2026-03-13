@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Help
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,12 +49,7 @@ fun HelpScreen(onClose: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             IconButton(onClick = onClose) {
-                Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = null,
-                    tint = AppColors.textSecondary,
-                    modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 180f },
-                )
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
             }
             Text("Help & Support", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }

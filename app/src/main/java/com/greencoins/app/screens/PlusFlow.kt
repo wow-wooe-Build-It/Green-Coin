@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
@@ -125,6 +126,9 @@ private fun PlusSelectionStep(missions: List<Mission>, onSelectMission: (String)
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
+            }
             Text("Select Mission", color = AppColors.white, fontSize = 30.sp, fontWeight = FontWeight.Bold)
             IconButton(onClick = onCancel) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
@@ -179,8 +183,17 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
             .fillMaxSize()
             .padding(48.dp, 48.dp, 24.dp, 40.dp),
     ) {
-        IconButton(onClick = onCancel) {
-            Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
+            }
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
+            }
         }
         Spacer(modifier = Modifier.height(32.dp))
         Text("MISSION BRIEFING", color = AppColors.accent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -259,6 +272,9 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            IconButton(onClick = onCancel, enabled = !isSubmitting) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
+            }
             Text("Proof of Impact", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
             IconButton(onClick = onCancel, enabled = !isSubmitting) {
                 Icon(Icons.Default.Add, contentDescription = null, tint = AppColors.textSecondary, modifier = Modifier.size(24.dp).graphicsLayer { rotationZ = 45f })
@@ -424,6 +440,15 @@ private fun PlusSuccessStep(mission: Mission, onCancel: () -> Unit) {
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
+            }
+        }
         Spacer(modifier = Modifier.weight(0.3f))
         Box(
             modifier = Modifier
