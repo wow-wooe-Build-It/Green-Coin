@@ -18,6 +18,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,12 +44,11 @@ import com.greencoins.app.screens.ProfileScreen
 import com.greencoins.app.screens.ShopScreen
 import com.greencoins.app.screens.ShopViewModel
 import com.greencoins.app.theme.AppColors
-
 import androidx.compose.runtime.collectAsState
 import com.greencoins.app.data.AuthRepository
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import com.greencoins.app.data.UserCoinsRepository
 import androidx.compose.material3.CircularProgressIndicator
+import kotlinx.coroutines.launch
 
 @Composable
 fun GreenCoinsApp() {
@@ -76,7 +77,7 @@ fun GreenCoinsApp() {
         }
     }
 
-    var coins by remember { mutableStateOf(8420) }
+    var coins by remember { mutableStateOf(0) }
     var plusStep by remember { mutableStateOf<PlusStep>(PlusStep.Selection) }
     var selectedMissionId by remember { mutableStateOf<String?>(null) }
     var selectedShopCategory by remember { mutableStateOf<String?>(null) }
@@ -98,6 +99,18 @@ fun GreenCoinsApp() {
         selectedMissionId = id
         plusStep = PlusStep.Brief
         screen = Screen.Plus
+    }
+
+    // Load coins for the currently logged-in user once we know auth state
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn == true) {
+            val userId = AuthRepository.currentUser?.id
+            if (userId != null) {
+                coins = UserCoinsRepository.getUserCoins(userId)
+            }
+        } else {
+            coins = 0
+        }
     }
 
     if (screen == Screen.Auth) {
@@ -180,13 +193,23 @@ fun GreenCoinsApp() {
                             categories = shopViewModel.categories,
                             onCategoryClick = { selectedShopCategory = it },
                         )
-                        else -> CategoryRewardsScreen(
-                            categories = shopViewModel.categories,
-                            selectedCategory = selectedShopCategory!!,
-                            onCategoryChange = { selectedShopCategory = it },
-                            onRedeem = { /* UI feedback only – "Claimed" state shown in card */ },
-                            onBack = { selectedShopCategory = null },
-                        )
+                        else -> {
+                            val refreshScope = rememberCoroutineScope()
+                            CategoryRewardsScreen(
+                                categories = shopViewModel.categories,
+                                selectedCategory = selectedShopCategory!!,
+                                onCategoryChange = { selectedShopCategory = it },
+                                onRedeem = {
+                                    val userId = AuthRepository.currentUser?.id
+                                    if (userId != null) {
+                                        refreshScope.launch {
+                                            coins = UserCoinsRepository.getUserCoins(userId)
+                                        }
+                                    }
+                                },
+                                onBack = { selectedShopCategory = null },
+                            )
+                        }
                     }
                     Screen.Help -> HelpScreen(onClose = { screen = Screen.Home })
                     Screen.Plus -> PlusFlow(

@@ -8,7 +8,10 @@ create table public.users (
   full_name text,
   avatar_url text,
   eco_score int default 0,
+  -- Total lifetime coins earned (kept for analytics / history)
   total_gc int default 0,
+  -- Current spendable coin balance for the user
+  coins int default 0,
   created_at timestamptz default now()
 );
 
