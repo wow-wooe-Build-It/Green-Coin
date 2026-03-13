@@ -1,13 +1,22 @@
 package com.greencoins.app
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -69,20 +78,61 @@ fun GreenCoinsApp() {
         return
     }
 
+    BackHandler(enabled = screen != Screen.Home) {
+        when {
+            screen == Screen.Help -> screen = Screen.Home
+            screen == Screen.Plus -> screen = Screen.Home
+            screen == Screen.Shop && selectedShopCategory != null -> selectedShopCategory = null
+            screen == Screen.Shop -> screen = Screen.Home
+            screen == Screen.Challenges -> screen = Screen.Home
+            screen == Screen.ChallengeDetail -> screen = Screen.Challenges
+            screen == Screen.Profile -> screen = Screen.Home
+            else -> { }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.bg),
     ) {
         if (screen != Screen.Plus && screen != Screen.Help) {
-            Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            Column(modifier = Modifier.align(Alignment.TopStart)) {
                 Header(coins = coins, onHelp = { screen = Screen.Help })
+                val onBack = when {
+                    screen == Screen.Home -> null
+                    screen == Screen.Shop && selectedShopCategory != null -> { { selectedShopCategory = null } }
+                    screen == Screen.Shop -> { { screen = Screen.Home } }
+                    screen == Screen.Challenges -> { { screen = Screen.Home } }
+                    screen == Screen.ChallengeDetail -> { { screen = Screen.Challenges } }
+                    screen == Screen.Profile -> { { screen = Screen.Home } }
+                    else -> null
+                }
+                if (onBack != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, top = 8.dp),
+                        horizontalArrangement = Arrangement.Start,
+                    ) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = AppColors.textSecondary)
+                        }
+                    }
+                }
             }
         }
+        val showBackRow = screen != Screen.Plus && screen != Screen.Help && screen != Screen.Home
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = if (screen != Screen.Plus && screen != Screen.Help) 64.dp else 0.dp),
+                .padding(
+                    top = when {
+                        screen == Screen.Plus || screen == Screen.Help -> 0.dp
+                        showBackRow -> 64.dp + 56.dp
+                        else -> 64.dp
+                    }
+                ),
         ) {
             AnimatedContent(
                 targetState = screen,
