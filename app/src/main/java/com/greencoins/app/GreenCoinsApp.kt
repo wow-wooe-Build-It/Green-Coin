@@ -46,7 +46,8 @@ import com.greencoins.app.screens.ShopViewModel
 import com.greencoins.app.theme.AppColors
 import androidx.compose.runtime.collectAsState
 import com.greencoins.app.data.AuthRepository
-import com.greencoins.app.data.UserCoinsRepository
+import com.greencoins.app.data.UserChallengesRepository
+import com.greencoins.app.data.UserRepository
 import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
@@ -84,6 +85,7 @@ fun GreenCoinsApp() {
     var selectedChallenge by remember { mutableStateOf<com.greencoins.app.data.ChallengeDetailData?>(null) }
     var joinedChallengeIds by remember { mutableStateOf(setOf<String>()) }
     val shopViewModel: ShopViewModel = viewModel()
+    val shopCategories by shopViewModel.categories.collectAsState(initial = emptyList())
 
     fun handleScreenChange(s: Screen) {
         if (s == Screen.Plus) {
@@ -101,15 +103,17 @@ fun GreenCoinsApp() {
         screen = Screen.Plus
     }
 
-    // Load coins for the currently logged-in user once we know auth state
+    // Load total_gc (for header), joined challenges for the currently logged-in user
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == true) {
             val userId = AuthRepository.currentUser?.id
             if (userId != null) {
-                coins = UserCoinsRepository.getUserCoins(userId)
+                coins = UserRepository.getTotalGc(userId)
+                joinedChallengeIds = UserChallengesRepository.getJoinedChallengeIds(userId)
             }
         } else {
             coins = 0
+            joinedChallengeIds = emptySet()
         }
     }
 
@@ -190,20 +194,21 @@ fun GreenCoinsApp() {
                     )
                     Screen.Shop -> when {
                         selectedShopCategory == null -> ShopScreen(
-                            categories = shopViewModel.categories,
+                            categories = shopCategories,
                             onCategoryClick = { selectedShopCategory = it },
                         )
                         else -> {
                             val refreshScope = rememberCoroutineScope()
                             CategoryRewardsScreen(
-                                categories = shopViewModel.categories,
+                                categories = shopCategories,
                                 selectedCategory = selectedShopCategory!!,
+                                userBalance = coins,
                                 onCategoryChange = { selectedShopCategory = it },
                                 onRedeem = {
                                     val userId = AuthRepository.currentUser?.id
                                     if (userId != null) {
                                         refreshScope.launch {
-                                            coins = UserCoinsRepository.getUserCoins(userId)
+                                            coins = UserRepository.getTotalGc(userId)
                                         }
                                     }
                                 },
@@ -232,11 +237,21 @@ fun GreenCoinsApp() {
                         }
                     )
                     Screen.ChallengeDetail -> if (selectedChallenge != null) {
+                        val refreshScope = rememberCoroutineScope()
                         ChallengeDetailScreen(
                             data = selectedChallenge!!,
                             onBack = { screen = Screen.Challenges },
                             isJoined = selectedChallenge!!.id in joinedChallengeIds,
-                            onJoin = { joinedChallengeIds = joinedChallengeIds + selectedChallenge!!.id },
+                            onJoin = {
+                                val cid = selectedChallenge!!.id
+                                joinedChallengeIds = joinedChallengeIds + cid
+                                val userId = AuthRepository.currentUser?.id
+                                if (userId != null) {
+                                    refreshScope.launch {
+                                        UserChallengesRepository.joinChallenge(userId, cid)
+                                    }
+                                }
+                            },
                         )
                     } else {
                         screen = Screen.Challenges // Fallback

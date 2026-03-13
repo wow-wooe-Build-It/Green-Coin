@@ -47,6 +47,7 @@ import com.greencoins.app.data.AuthRepository
 import com.greencoins.app.data.ChallengeDetailData
 import com.greencoins.app.data.ChallengeDetailRepository
 import com.greencoins.app.data.LeaderboardEntry
+import com.greencoins.app.data.LeaderboardRepository
 import com.greencoins.app.theme.AppColors
 
 @Composable
@@ -58,20 +59,31 @@ fun ChallengeDetailScreen(
 ) {
     var showJoinDialog by remember { mutableStateOf(false) }
 
-    val baseLeaderboard = remember(data.id) { ChallengeDetailRepository.getMockLeaderboard(data.id.hashCode()) }
+    var baseLeaderboard by remember { mutableStateOf<List<LeaderboardEntry>>(emptyList()) }
+    androidx.compose.runtime.LaunchedEffect(data.id) {
+        baseLeaderboard = LeaderboardRepository.getChallengeLeaderboard(
+            challengeId = data.id,
+            currentUserId = AuthRepository.currentUser?.id,
+        )
+    }
     val userName = remember {
         AuthRepository.currentUser?.userMetadata?.get("full_name")?.toString()?.replace("\"", "")
             ?: AuthRepository.currentUser?.email?.split("@")?.firstOrNull()?.replaceFirstChar { it.uppercase() }
             ?: "Current User"
     }
     val leaderboard = if (isJoined) {
-        baseLeaderboard.map { it.copy(isCurrentUser = false) } +
-            LeaderboardEntry(
-                rank = baseLeaderboard.size + 1,
-                username = userName,
-                coins = 0,
-                isCurrentUser = true,
-            )
+        val alreadyInList = baseLeaderboard.any { it.isCurrentUser }
+        if (alreadyInList) {
+            baseLeaderboard
+        } else {
+            baseLeaderboard.map { it.copy(isCurrentUser = false) } +
+                LeaderboardEntry(
+                    rank = baseLeaderboard.size + 1,
+                    username = userName,
+                    coins = 0,
+                    isCurrentUser = true,
+                )
+        }
     } else {
         baseLeaderboard
     }

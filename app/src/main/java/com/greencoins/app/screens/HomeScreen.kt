@@ -148,15 +148,15 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("12", color = AppColors.white, fontWeight = FontWeight.Bold)
+                    Text("${userProfile?.treesPlanted ?: 0}", color = AppColors.white, fontWeight = FontWeight.Bold)
                     Text("Trees", color = AppColors.textSecondary, fontSize = 10.sp)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("5kg", color = AppColors.white, fontWeight = FontWeight.Bold)
+                    Text("${userProfile?.plasticRecycledKg ?: 0}kg", color = AppColors.white, fontWeight = FontWeight.Bold)
                     Text("Recycled", color = AppColors.textSecondary, fontSize = 10.sp)
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("140kg", color = AppColors.white, fontWeight = FontWeight.Bold)
+                    Text("${userProfile?.co2SavedKg ?: 0}kg", color = AppColors.white, fontWeight = FontWeight.Bold)
                     Text("CO₂ Saved", color = AppColors.textSecondary, fontSize = 10.sp)
                 }
             }

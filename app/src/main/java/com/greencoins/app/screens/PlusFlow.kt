@@ -207,12 +207,7 @@ private fun PlusBriefStep(mission: Mission, onNext: () -> Unit, onCancel: () -> 
         )
         Spacer(modifier = Modifier.height(48.dp))
         
-        // Mock steps for now, as DB doesn't have steps column.
-        listOf(
-            "Prepare for the mission action",
-            "Perform the eco-friendly task",
-            "Take a photo as proof",
-        ).forEachIndexed { index, text ->
+        mission.instructionSteps.forEachIndexed { index, text ->
             Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = 24.dp)) {
                 Box(
                     modifier = Modifier

@@ -33,10 +33,32 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.greencoins.app.components.GlassCard
+import com.greencoins.app.data.FaqRepository
 import com.greencoins.app.theme.AppColors
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 @Composable
 fun HelpScreen(onClose: () -> Unit) {
+    var faqItems by remember { mutableStateOf<List<com.greencoins.app.data.FaqItem>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        faqItems = FaqRepository.getFaqItems()
+    }
+
+    val displayItems = if (faqItems.isEmpty()) {
+        listOf(
+            com.greencoins.app.data.FaqItem("", "How are missions verified?", "We use a combination of AI image recognition, metadata validation (GPS/Timestamp), and community peer-review to ensure every action is genuine.", 1),
+            com.greencoins.app.data.FaqItem("", "What can I buy with GreenCoins?", "GreenCoins can be redeemed for sustainable products, public transport passes, or converted into direct donations for certified eco-projects.", 2),
+            com.greencoins.app.data.FaqItem("", "How do I level up?", "Earn XP by completing missions and challenges. Higher levels unlock exclusive high-reward missions and limited edition rewards.", 3),
+        )
+    } else {
+        faqItems
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,16 +76,12 @@ fun HelpScreen(onClose: () -> Unit) {
             Text("Help & Support", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(modifier = Modifier.height(32.dp))
-        listOf(
-            "How are missions verified?" to "We use a combination of AI image recognition, metadata validation (GPS/Timestamp), and community peer-review to ensure every action is genuine.",
-            "What can I buy with GreenCoins?" to "GreenCoins can be redeemed for sustainable products, public transport passes, or converted into direct donations for certified eco-projects.",
-            "How do I level up?" to "Earn XP by completing missions and challenges. Higher levels unlock exclusive high-reward missions and limited edition rewards.",
-        ).forEach { (q, a) ->
+        displayItems.forEach { item ->
             GlassCard(modifier = Modifier.padding(vertical = 8.dp)) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text(q, color = AppColors.accent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Text(item.question, color = AppColors.accent, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(a, color = AppColors.textSecondary, fontSize = 12.sp)
+                    Text(item.answer, color = AppColors.textSecondary, fontSize = 12.sp)
                 }
             }
         }

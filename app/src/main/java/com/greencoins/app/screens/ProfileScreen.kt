@@ -32,6 +32,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import com.greencoins.app.data.AuthRepository
+import com.greencoins.app.data.UserRepository
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -44,11 +45,14 @@ import com.greencoins.app.theme.AppColors
 @Composable
 fun ProfileScreen(onLogout: () -> Unit) {
     var user by remember { mutableStateOf<io.github.jan.supabase.auth.user.UserInfo?>(null) }
+    var userProfile by remember { mutableStateOf<com.greencoins.app.data.UserProfile?>(null) }
     var showPersonalInfo by remember { mutableStateOf(false) }
     
-    // Fetch user on launch
     androidx.compose.runtime.LaunchedEffect(Unit) {
         user = AuthRepository.currentUser
+        user?.id?.let { userId ->
+            userProfile = UserRepository.getProfile(userId)
+        }
     }
     
     if (showPersonalInfo && user != null) {
@@ -89,7 +93,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
                         .background(AppColors.accent, RoundedCornerShape(48.dp)),
                 ) {
                     ImageWithFallback(
-                        src = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
+                        src = userProfile?.avatarUrl ?: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=200",
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -100,11 +104,13 @@ fun ProfileScreen(onLogout: () -> Unit) {
                         .background(AppColors.accent, RoundedCornerShape(9999.dp))
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                 ) {
-                    Text("LVL 24", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("LVL ${userProfile?.level ?: 1}", color = AppColors.black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                val displayName = user?.userMetadata?.get("full_name")?.toString()?.replace("\"", "") ?: "GreenCoin User"
+                val displayName = userProfile?.fullName?.takeIf { it.isNotBlank() }
+                    ?: user?.userMetadata?.get("full_name")?.toString()?.replace("\"", "")
+                    ?: "GreenCoin User"
                 Text(displayName, color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Text(user?.email ?: "", color = AppColors.textSecondary, fontSize = 12.sp)
             }
@@ -118,7 +124,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Total Earned", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("12,450", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text("%,d".format(userProfile?.totalGc ?: 0), color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.size(4.dp))
                         Text("GC", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
@@ -128,7 +134,7 @@ fun ProfileScreen(onLogout: () -> Unit) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Global Rank", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("#128", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text("#${userProfile?.globalRank ?: "-"}", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.size(4.dp))
                         Text("TOP 1%", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }

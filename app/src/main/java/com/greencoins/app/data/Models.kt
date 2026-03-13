@@ -19,6 +19,12 @@ data class UserProfile(
     @SerialName("avatar_url") val avatarUrl: String? = null,
     @SerialName("eco_score") val ecoScore: Int = 0,
     @SerialName("total_gc") val totalGc: Int = 0,
+    val coins: Int = 0,
+    @SerialName("trees_planted") val treesPlanted: Int = 0,
+    @SerialName("plastic_recycled_kg") val plasticRecycledKg: Int = 0,
+    @SerialName("co2_saved_kg") val co2SavedKg: Int = 0,
+    val level: Int = 1,
+    @SerialName("global_rank") val globalRank: Int? = null,
 )
 
 @Serializable
@@ -40,9 +46,18 @@ data class Mission(
     val description: String? = null,
     @SerialName("icon_type") val iconType: String,
     @SerialName("gc_reward") val gcReward: Int = 0,
-    @SerialName("challenge_id") val challengeId: String? = null
+    @SerialName("challenge_id") val challengeId: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null,
+    val category: String? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
+    val steps: List<String>? = null,
 ) {
     val icon: MissionIcon get() = try { MissionIcon.valueOf(iconType) } catch(e: Exception) { MissionIcon.Leaf }
+    val instructionSteps: List<String> get() = steps ?: listOf(
+        "Prepare for the mission action",
+        "Perform the eco-friendly task",
+        "Take a photo as proof",
+    )
 }
 
 @Serializable
@@ -63,7 +78,9 @@ data class Reward(
     val category: String,
     @SerialName("gc_cost") val gcCost: Int,
     @SerialName("image_url") val imageUrl: String? = null,
-    @SerialName("discount_label") val discountLabel: String? = null
+    @SerialName("discount_label") val discountLabel: String? = null,
+    val stock: Int = -1,
+    @SerialName("is_active") val isActive: Boolean = true,
 )
 
 @Serializable
@@ -106,13 +123,5 @@ object ChallengeDetailRepository {
             "Perform the required eco-friendly actions.",
             "Upload your proof in the Missions tab to earn GC!"
         )
-    )
-
-    fun getMockLeaderboard(seed: Int): List<LeaderboardEntry> = listOf(
-        LeaderboardEntry(1, "Kushagra Mehta", 450, true),
-        LeaderboardEntry(2, "NeonRunner22", 410, false),
-        LeaderboardEntry(3, "EcoGhost", 395, false),
-        LeaderboardEntry(4, "GreenByte", 380, false),
-        LeaderboardEntry(5, "SolarPunk", 360, false),
     )
 }

@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 fun CategoryRewardsScreen(
     categories: List<String>,
     selectedCategory: String,
+    userBalance: Int = 0,
     onCategoryChange: (String) -> Unit,
     onRedeem: (Reward) -> Unit,
     onBack: () -> Unit,
@@ -55,6 +56,10 @@ fun CategoryRewardsScreen(
     LaunchedEffect(selectedCategory) {
         isLoading = true
         rewards = ShopRepository.getRewardsByCategory(selectedCategory)
+        val userId = AuthRepository.currentUser?.id
+        if (userId != null) {
+            redeemedIds = ShopRepository.getRedeemedRewardIds(userId)
+        }
         isLoading = false
     }
     
@@ -130,9 +135,11 @@ fun CategoryRewardsScreen(
                  }
             } else {
                 rewards.forEach { reward ->
+                    val canRedeem = reward.id !in redeemedIds && userBalance >= reward.gcCost
                     RewardCard(
                         reward = reward,
                         isRedeemed = reward.id in redeemedIds,
+                        canRedeem = canRedeem,
                         onRedeem = {
                             scope.launch {
                                 // Call repository to redeem
@@ -158,6 +165,7 @@ fun CategoryRewardsScreen(
 private fun RewardCard(
     reward: Reward,
     isRedeemed: Boolean,
+    canRedeem: Boolean = true,
     onRedeem: () -> Unit,
 ) {
     Box(
@@ -194,19 +202,28 @@ private fun RewardCard(
                     )
                 }
             }
+            val (btnText, btnColor) = when {
+                isRedeemed -> "Claimed" to AppColors.white
+                !canRedeem -> "Insufficient GC" to AppColors.white
+                else -> "Redeem" to AppColors.black
+            }
             Box(
                 modifier = Modifier
                     .background(
-                        color = if (isRedeemed) AppColors.textSecondary else AppColors.accent,
+                        color = when {
+                            isRedeemed -> AppColors.textSecondary
+                            !canRedeem -> AppColors.textSecondary.copy(alpha = 0.6f)
+                            else -> AppColors.accent
+                        },
                         shape = RoundedCornerShape(16.dp),
                     )
-                    .clickable(enabled = !isRedeemed) { onRedeem() }
+                    .clickable(enabled = canRedeem && !isRedeemed) { onRedeem() }
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = if (isRedeemed) "Claimed" else "Redeem",
-                    color = if (isRedeemed) AppColors.white else AppColors.black,
+                    text = btnText,
+                    color = btnColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                 )
