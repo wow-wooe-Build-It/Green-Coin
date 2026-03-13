@@ -72,6 +72,9 @@ dependencies {
     
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // EXIF metadata verification for mission images
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
