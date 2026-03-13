@@ -56,11 +56,10 @@ fun Header(
                     .background(AppColors.accent, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = AppColors.black,
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.greencoins.app.R.drawable.greencoin_logo_transparent),
+                    contentDescription = "GreenCoins Logo",
+                    modifier = Modifier.size(24.dp)
                 )
             }
             Text(
