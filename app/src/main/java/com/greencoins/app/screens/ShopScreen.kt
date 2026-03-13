@@ -62,7 +62,7 @@ fun ShopScreen(
         columns = GridCells.Fixed(2),
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = 80.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
+            .padding(top = 12.dp, bottom = 96.dp, start = 24.dp, end = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 16.dp),
