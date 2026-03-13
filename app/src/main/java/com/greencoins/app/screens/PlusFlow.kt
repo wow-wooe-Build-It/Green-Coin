@@ -315,7 +315,7 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
     var beforeImageUri by remember { mutableStateOf<Uri?>(null) }
     var afterImageUri by remember { mutableStateOf<Uri?>(null) }
     var description by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
+
     var isConfirmed by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
     var pendingImageSlot by remember { mutableStateOf<Boolean?>(null) } // true = before, false = after
@@ -417,36 +417,7 @@ private fun PlusUploadStep(mission: Mission, onNext: () -> Unit, onCancel: () ->
         }
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Location input (manual text only, no GPS)
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = "Location",
-                color = AppColors.textSecondary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            TextField(
-                value = location,
-                onValueChange = { location = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                placeholder = { Text("Where did this happen?", color = AppColors.gray555) },
-                colors = TextFieldDefaults.colors(
-                    focusedTextColor = AppColors.white,
-                    unfocusedTextColor = AppColors.white,
-                    focusedContainerColor = AppColors.border,
-                    unfocusedContainerColor = AppColors.border,
-                    focusedIndicatorColor = AppColors.accent.copy(alpha = 0.5f),
-                    unfocusedIndicatorColor = AppColors.gray333,
-                ),
-                shape = RoundedCornerShape(24.dp),
-                enabled = !isSubmitting
-            )
-        }
+
 
         Spacer(modifier = Modifier.height(24.dp))
         TextField(

@@ -190,6 +190,7 @@ fun GreenCoinsApp() {
                             selectedChallenge = data
                             screen = Screen.ChallengeDetail
                         },
+                        refreshHeader = { userViewModel.refresh() },
                     )
                     Screen.Shop -> when {
                         selectedShopCategory == null -> ShopScreen(

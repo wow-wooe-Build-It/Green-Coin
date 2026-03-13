@@ -122,21 +122,21 @@ fun ProfileScreen(onLogout: () -> Unit) {
         ) {
             GlassCard(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Total Earned", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Current Streak", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("%,d".format(userProfile?.totalGc ?: 0), color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text("${userProfile?.streakCount ?: 0}", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.size(4.dp))
-                        Text("GC", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("DAYS", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
             GlassCard(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Global Rank", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Missions Completed", color = AppColors.textSecondary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        Text("#${userProfile?.globalRank ?: "-"}", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Text("${userProfile?.missionsCompleted ?: 0}", color = AppColors.white, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.size(4.dp))
-                        Text("TOP 1%", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("TOTAL", color = AppColors.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

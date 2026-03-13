@@ -17,13 +17,12 @@ data class UserProfile(
     val email: String? = null,
     @SerialName("full_name") val fullName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    @SerialName("eco_score") val ecoScore: Int = 0,
     @SerialName("total_gc") val totalGc: Int = 0,
     val coins: Int = 0,
-    @SerialName("trees_planted") val treesPlanted: Int = 0,
-    @SerialName("plastic_recycled_kg") val plasticRecycledKg: Int = 0,
-    @SerialName("co2_saved_kg") val co2SavedKg: Int = 0,
     val level: Int = 1,
+    @SerialName("streak_count") val streakCount: Int = 0,
+    @SerialName("missions_completed") val missionsCompleted: Int = 0,
+    @SerialName("last_mission_date") val lastMissionDate: String? = null,
     @SerialName("global_rank") val globalRank: Int? = null,
 )
 
